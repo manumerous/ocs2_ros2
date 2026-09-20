@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
-#include <std_msgs/Bool.h>
 
 #include <ocs2_legged_robot/gait/ModeSequenceTemplate.h>
 #include <ocs2_ros2_msgs/msg/mode_schedule.hpp>

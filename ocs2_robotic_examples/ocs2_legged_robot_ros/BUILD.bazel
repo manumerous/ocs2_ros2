@@ -1,0 +1,84 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("//bazel:ocs2_cxx_flags.bzl", "OCS2_LINKOPTS", "OCS2_ROS2_COPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+# NOTE (dead pre-existing code, not migration casualties -- matches the
+# repo-wide "no CI ever builds this ROS2 tree" finding):
+#   - `legged_robot_ipm_mpc` (LeggedRobotIpmMpcNode.cpp) still
+#     `#include`s `<ros/init.h>`/`<ros/package.h>`/
+#     `<ocs2_ros_interfaces/...>` -- genuine ROS1-era code.
+#   - `legged_robot_sqp_mpc` (LeggedRobotSqpMpcNode.cpp) is otherwise
+#     clean ROS2, but includes
+#     `<ocs2_ros_interfaces/synchronized_module/SolverObserverRosCallbacks.h>`
+#     -- that header exists *only* in the out-of-scope legacy
+#     `ocs2_ros_interfaces` package; there's no ocs2_ros2_interfaces
+#     equivalent to redirect to (confirmed: it was never ported), so
+#     unlike the MultipleShootingMpc/modifyReferences-style fixes
+#     elsewhere in this migration, fixing this would mean *porting a new
+#     ROS2 feature* (solver-observer-over-ROS callbacks), not a
+#     mechanical rename -- out of scope for this migration.
+_DEPS = [
+    "//ocs2_core",
+    "//ocs2_ddp",
+    "//ocs2_pinocchio/ocs2_centroidal_model",
+    "//ocs2_pinocchio/ocs2_pinocchio_interface",
+    "//ocs2_robotic_examples/ocs2_legged_robot",
+    "//ocs2_robotic_tools",
+    "//ocs2_ros2_interfaces",
+    "//ocs2_ros2_msgs:cc",
+    "@ament_index_cpp//:ament_index_cpp_library",
+    "@geometry_msgs//:cc",
+    "@kdl_parser",
+    "@pinocchio",
+    "@rclcpp//:rclcpp_library",
+    "@sensor_msgs//:cc",
+    "@urdf//:urdf_library",
+    "@visualization_msgs//:cc",
+]
+
+cc_library(
+    name = "ocs2_legged_robot_ros",
+    srcs = [
+        "src/gait/GaitKeyboardPublisher.cpp",
+        "src/gait/GaitReceiver.cpp",
+        "src/visualization/LeggedRobotVisualizer.cpp",
+    ],
+    hdrs = glob(["include/**/*.h"]),
+    copts = OCS2_ROS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = _DEPS,
+)
+
+cc_binary(
+    name = "legged_robot_ddp_mpc",
+    srcs = ["src/LeggedRobotDdpMpcNode.cpp"],
+    copts = OCS2_ROS2_COPTS,
+    linkopts = OCS2_LINKOPTS,
+    deps = [":ocs2_legged_robot_ros"] + _DEPS,
+)
+
+cc_binary(
+    name = "legged_robot_dummy",
+    srcs = ["src/LeggedRobotDummyNode.cpp"],
+    copts = OCS2_ROS2_COPTS,
+    linkopts = OCS2_LINKOPTS,
+    deps = [":ocs2_legged_robot_ros"] + _DEPS,
+)
+
+cc_binary(
+    name = "legged_robot_target",
+    srcs = ["src/LeggedRobotPoseCommandNode.cpp"],
+    copts = OCS2_ROS2_COPTS,
+    linkopts = OCS2_LINKOPTS,
+    deps = [":ocs2_legged_robot_ros"] + _DEPS,
+)
+
+cc_binary(
+    name = "legged_robot_gait_command",
+    srcs = ["src/LeggedRobotGaitCommandNode.cpp"],
+    copts = OCS2_ROS2_COPTS,
+    linkopts = OCS2_LINKOPTS,
+    deps = [":ocs2_legged_robot_ros"] + _DEPS,
+)
