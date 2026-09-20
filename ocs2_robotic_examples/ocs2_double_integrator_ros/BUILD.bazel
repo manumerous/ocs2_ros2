@@ -1,0 +1,48 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("//bazel:ocs2_cxx_flags.bzl", "OCS2_LINKOPTS", "OCS2_ROS2_COPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+_DEPS = [
+    "//ocs2_ddp",
+    "//ocs2_robotic_examples/ocs2_double_integrator",
+    "//ocs2_robotic_tools",
+    "//ocs2_ros2_interfaces",
+    "//ocs2_sqp/ocs2_sqp",
+    "@ament_index_cpp//:ament_index_cpp_library",
+    "@rclcpp//:rclcpp_library",
+]
+
+# DoubleIntegratorMpcNode.cpp had the same real, fixable bug also found in
+# ocs2_ballbot_ros's BallbotSlpMpcNode.cpp: it instantiated the
+# now-nonexistent `ocs2::MultipleShootingMpc` (from a nonexistent
+# `ocs2_sqp/MultipleShootingMpc.h`) instead of the real, current
+# `ocs2::SqpMpc`; fixed to match (also dropped its unused
+# `ocs2_ddp/GaussNewtonDDP_MPC.h` include).
+cc_binary(
+    name = "double_integrator_mpc",
+    srcs = ["src/DoubleIntegratorMpcNode.cpp"],
+    copts = OCS2_ROS2_COPTS,
+    linkopts = OCS2_LINKOPTS,
+    deps = _DEPS,
+)
+
+cc_binary(
+    name = "double_integrator_dummy_test",
+    srcs = [
+        "src/DoubleIntegratorDummyVisualization.cpp",
+        "src/DummyDoubleIntegratorNode.cpp",
+    ] + glob(["include/**/*.h"]),
+    copts = OCS2_ROS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = _DEPS + ["@sensor_msgs//:cc"],
+)
+
+cc_binary(
+    name = "double_integrator_target",
+    srcs = ["src/DoubleIntegratorTargetPoseCommand.cpp"],
+    copts = OCS2_ROS2_COPTS,
+    linkopts = OCS2_LINKOPTS,
+    deps = _DEPS,
+)

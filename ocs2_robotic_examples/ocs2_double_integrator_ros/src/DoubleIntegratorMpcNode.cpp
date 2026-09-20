@@ -30,10 +30,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#include <ocs2_ddp/GaussNewtonDDP_MPC.h>
 #include <ocs2_ros2_interfaces/mpc/MPC_ROS_Interface.h>
 #include <ocs2_ros2_interfaces/synchronized_module/RosReferenceManager.h>
-#include "ocs2_sqp/MultipleShootingMpc.h"
+#include "ocs2_sqp/SqpMpc.h"
 
 #include "ocs2_double_integrator/DoubleIntegratorInterface.h"
 
@@ -65,8 +64,8 @@ int main(int argc, char** argv) {
   rosReferenceManagerPtr->subscribe(nodeHandle, rclcpp::QoS(1));
 
   // MPC
-  ocs2::MultipleShootingMpc mpc(doubleIntegratorInterface.mpcSettings(), doubleIntegratorInterface.sqpSettings(),
-                                doubleIntegratorInterface.getOptimalControlProblem(), doubleIntegratorInterface.getInitializer());
+  ocs2::SqpMpc mpc(doubleIntegratorInterface.mpcSettings(), doubleIntegratorInterface.sqpSettings(),
+                    doubleIntegratorInterface.getOptimalControlProblem(), doubleIntegratorInterface.getInitializer());
   mpc.getSolverPtr()->setReferenceManager(rosReferenceManagerPtr);
 
   // Launch MPC ROS node

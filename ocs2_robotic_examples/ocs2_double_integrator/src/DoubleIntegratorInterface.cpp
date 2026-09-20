@@ -67,7 +67,7 @@ DoubleIntegratorInterface::DoubleIntegratorInterface(const std::string& taskFile
 
   // DDP-MPC settings
   ddpSettings_ = ddp::loadSettings(taskFile, "ddp", verbose);
-  sqpSettings_ = multiple_shooting::loadSettings(taskFile, "multiple_shooting", verbose);
+  sqpSettings_ = sqp::loadSettings(taskFile, "multiple_shooting", verbose);
   mpcSettings_ = mpc::loadSettings(taskFile, "mpc", verbose);
 
   /*

@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // OCS2
 #include <ocs2_core/Types.h>
 #include <ocs2_core/initialization/Initializer.h>
-#include <ocs2_sqp/MultipleShootingSettings.h>
+#include <ocs2_sqp/SqpSettings.h>
 #include <ocs2_ddp/DDP_Settings.h>
 #include <ocs2_mpc/MPC_Settings.h>
 #include <ocs2_oc/rollout/TimeTriggeredRollout.h>
@@ -64,7 +64,7 @@ class DoubleIntegratorInterface final : public RobotInterface {
 
   const vector_t& getInitialTarget() { return finalGoal_; }
 
-  multiple_shooting::Settings& sqpSettings() { return sqpSettings_; }
+  sqp::Settings& sqpSettings() { return sqpSettings_; }
 
   ddp::Settings& ddpSettings() { return ddpSettings_; }
 
@@ -80,7 +80,7 @@ class DoubleIntegratorInterface final : public RobotInterface {
 
  private:
   ddp::Settings ddpSettings_;
-  multiple_shooting::Settings sqpSettings_;
+  sqp::Settings sqpSettings_;
   mpc::Settings mpcSettings_;
 
   OptimalControlProblem problem_;

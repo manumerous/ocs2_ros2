@@ -1,0 +1,41 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:ocs2_cxx_flags.bzl", "OCS2_COPTS", "OCS2_LINKOPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+# NOTE: BallbotSimpleExample.cpp, pyBindModule.cpp/BallbotPyBindings.h/
+# setup.py (Python bindings), and the test/ directory are not referenced
+# by any add_library/add_executable/ament_add_gtest call in the original
+# CMakeLists.txt -- they're dead/legacy code (BallbotSimpleExample.cpp
+# even calls the ROS1-only `ros::package::getPath`) not part of the
+# active build, so none of them are migrated here.
+cc_library(
+    name = "ocs2_ballbot",
+    srcs = [
+        "src/BallbotInterface.cpp",
+        "src/dynamics/BallbotSystemDynamics.cpp",
+    ],
+    hdrs = glob(["include/**/*.h"]),
+    copts = OCS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS + ["-ldl"],
+    deps = [
+        "//ocs2_core",
+        "//ocs2_ddp",
+        "//ocs2_mpc",
+        "//ocs2_robotic_tools",
+        "//ocs2_slp",
+        "//ocs2_sqp/ocs2_sqp",
+        "//third_party/iit_rbd",
+        "@boost.filesystem",
+        "@boost.system",
+        "@cppad",
+        "@cppadcodegen",
+        "@eigen",
+    ],
+)
+
+filegroup(
+    name = "config",
+    srcs = glob(["config/**"]),
+)
