@@ -1,0 +1,3 @@
+# Marks this directory as a Bazel package so
+# BUILD.ocs2_robotic_assets.bazel (the actual http_archive overlay) can be
+# referenced by label from MODULE.bazel.

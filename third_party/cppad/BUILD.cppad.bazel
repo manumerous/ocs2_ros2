@@ -1,0 +1,18 @@
+"""BUILD overlay for @cppad (CppAD 20190200.5, http_archive).
+
+CppAD has no Bazel/registry module. It's used by OCS2 purely as a header-only
+templated AD library (the existing ocs2_thirdparty ament package only ever
+did `install(DIRECTORY include/)` -- no compiled sources), so this mirrors
+that: a header-only cc_library exposing the `cppad/...` include prefix that
+the OCS2 source already uses unchanged.
+"""
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "cppad",
+    hdrs = glob(["include/cppad/**"], exclude = ["include/cppad/cg/**"]),
+    includes = ["include"],
+)

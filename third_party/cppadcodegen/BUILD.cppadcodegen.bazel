@@ -1,0 +1,17 @@
+"""BUILD overlay for @cppadcodegen (CppADCodeGen, http_archive).
+
+Header-only, like CppAD -- the existing ocs2_thirdparty ament package only
+ever installed these headers, never compiled anything from them. Depends on
+@cppad since CppADCodeGen headers build on top of CppAD's `cppad/...` types.
+"""
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "cppadcodegen",
+    hdrs = glob(["include/cppad/cg/**"]),
+    includes = ["include"],
+    deps = ["@cppad"],
+)

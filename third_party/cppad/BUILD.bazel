@@ -1,0 +1,3 @@
+# Marks this directory as a Bazel package so BUILD.cppad.bazel (the actual
+# http_archive overlay, named differently so it doesn't shadow this file)
+# can be referenced by label from MODULE.bazel.

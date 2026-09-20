@@ -1,0 +1,198 @@
+"""BUILD overlay for @blasfeo (http_archive).
+
+Mirrors the exact CMake configuration used today by
+ocs2_sqp/blasfeo_catkin/CMakeLists.txt: TARGET=GENERIC (portable C, no
+per-microarchitecture assembly kernels), and BLASFEO's own CMakeLists.txt
+defaults for everything else (LA=HIGH_PERFORMANCE, MF=PANELMAJ, BLAS_API=ON,
+FORTRAN_BLAS_API=OFF, USE_C99_MATH=ON, EXT_DEP=ON, RUNTIME_CHECKS=OFF,
+K_MAX_STACK=300). The exact source-file list below is transcribed from that
+CMakeLists.txt's `if(${TARGET} MATCHES GENERIC)` / LA=HIGH_PERFORMANCE /
+MF=PANELMAJ / BLAS_API=ON / EXT_DEP=ON branches (BLASFEO has no Bazel build
+of its own to depend on instead).
+
+BLASFEO normally generates include/blasfeo_target.h from
+blasfeo_target.h.in via CMake's configure_file(); since TARGET=GENERIC sets
+none of the TARGET_NEED_FEATURE_* flags, that substitution is reproduced here
+as a static generated header.
+"""
+
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+write_file(
+    name = "gen_blasfeo_target_h",
+    out = "include/blasfeo_target.h",
+    content = [
+        "#ifndef TARGET_GENERIC",
+        "#define TARGET_GENERIC",
+        "#endif",
+        "",
+        "#ifndef LA_HIGH_PERFORMANCE",
+        "#define LA_HIGH_PERFORMANCE",
+        "#endif",
+        "",
+        "#ifndef MF_PANELMAJ",
+        "#define MF_PANELMAJ",
+        "#endif",
+        "",
+        "#ifndef EXT_DEP",
+        "#define EXT_DEP",
+        "#endif",
+        "",
+        "#ifndef BLAS_API",
+        "#define BLAS_API",
+        "#endif",
+        "",
+    ],
+)
+
+_AUX_COMMON_SRC = [
+    "auxiliary/blasfeo_processor_features.c",
+    "auxiliary/blasfeo_stdlib.c",
+    "auxiliary/memory.c",
+    "auxiliary/d_aux_common.c",
+    "auxiliary/s_aux_common.c",
+]
+
+_AUX_EXT_DEP_SRC = [
+    "auxiliary/d_aux_ext_dep_common.c",
+    "auxiliary/s_aux_ext_dep_common.c",
+    "auxiliary/d_aux_ext_dep.c",
+    "auxiliary/s_aux_ext_dep.c",
+    "auxiliary/v_aux_ext_dep_lib.c",
+    "auxiliary/i_aux_ext_dep_lib.c",
+    "auxiliary/timing.c",
+]
+
+_AUX_HP_PM_SRC = [
+    "auxiliary/d_aux_lib4.c",
+    "auxiliary/s_aux_lib4.c",
+    "auxiliary/m_aux_lib44.c",
+]
+
+_KERNEL_GENERIC_SRC = [
+    "kernel/generic/kernel_dgemm_4x4_lib4.c",
+    "kernel/generic/kernel_dgemm_diag_lib4.c",
+    "kernel/generic/kernel_dgemv_4_lib4.c",
+    "kernel/generic/kernel_dsymv_4_lib4.c",
+    "kernel/generic/kernel_dgecp_lib4.c",
+    "kernel/generic/kernel_dgetr_lib4.c",
+    "kernel/generic/kernel_dgetrf_pivot_lib4.c",
+    "kernel/generic/kernel_dgeqrf_4_lib4.c",
+    "kernel/generic/kernel_dpack_lib4.c",
+    "kernel/generic/kernel_ddot_lib.c",
+    "kernel/generic/kernel_daxpy_lib.c",
+    "kernel/generic/kernel_sgemm_4x4_lib4.c",
+    "kernel/generic/kernel_sgemm_diag_lib4.c",
+    "kernel/generic/kernel_sgemv_4_lib4.c",
+    "kernel/generic/kernel_ssymv_4_lib4.c",
+    "kernel/generic/kernel_sgetrf_pivot_lib4.c",
+    "kernel/generic/kernel_sgecp_lib4.c",
+    "kernel/generic/kernel_sgetr_lib4.c",
+    "kernel/generic/kernel_spack_lib4.c",
+    "kernel/generic/kernel_sdot_lib.c",
+    "kernel/generic/kernel_saxpy_lib.c",
+    "kernel/generic/kernel_align_generic.c",
+    "kernel/generic/kernel_d_aux_lib.c",
+]
+
+_BLASFEO_HP_PM_SRC = [
+    "blasfeo_hp_pm/d_blas1_lib4.c",
+    "blasfeo_hp_pm/d_blas2_lib4.c",
+    "blasfeo_hp_pm/d_blas2_diag_lib.c",
+    "blasfeo_hp_pm/d_blas3_lib4.c",
+    "blasfeo_hp_pm/d_blas3_diag_lib4.c",
+    "blasfeo_hp_pm/d_lapack_lib4.c",
+    "blasfeo_hp_pm/s_blas1_lib4.c",
+    "blasfeo_hp_pm/s_blas2_lib4.c",
+    "blasfeo_hp_pm/s_blas2_diag_lib.c",
+    "blasfeo_hp_pm/s_blas3_lib4.c",
+    "blasfeo_hp_pm/s_blas3_diag_lib4.c",
+    "blasfeo_hp_pm/s_lapack_lib4.c",
+]
+
+_BLAS_SRC = [
+    "blas_api/dcopy.c",
+    "blas_api/daxpy.c",
+    "blas_api/ddot.c",
+    "blas_api/dgemm_ref.c",
+    "blas_api/dsyrk_ref.c",
+    "blas_api/dtrmm_ref.c",
+    "blas_api/dtrsm_ref.c",
+    "blas_api/dgesv.c",
+    "blas_api/dgetrf_ref.c",
+    "blas_api/dgetrs.c",
+    "blas_api/dlaswp.c",
+    "blas_api/dposv.c",
+    "blas_api/dpotrf_ref.c",
+    "blas_api/dpotrs.c",
+    "blas_api/dtrtrs.c",
+    "blas_api/saxpy.c",
+    "blas_api/sdot.c",
+    "blas_api/sgemm_ref.c",
+    "blas_api/strsm_ref.c",
+    "blas_api/spotrf_ref.c",
+]
+
+_BLASFEO_HP_CM_SRC = [
+    "blasfeo_hp_cm/dgemm.c",
+    "blasfeo_hp_cm/dsyrk.c",
+    "blasfeo_hp_cm/dtrsm.c",
+    "blasfeo_hp_cm/dtrmm.c",
+    "blasfeo_hp_cm/dpotrf.c",
+    "blasfeo_hp_cm/dgetrf.c",
+    "blasfeo_hp_cm/sgemm.c",
+    "blasfeo_hp_cm/strsm.c",
+    "blasfeo_hp_cm/spotrf.c",
+]
+
+# BLASFEO's .c sources are organized as "generic driver" files that
+# textually #include a sibling "template" .c file (a common pattern in this
+# codebase, akin to the x_*.c files down in ipm_core/hpipm) -- these are
+# never compiled as their own translation unit, only pulled in via
+# #include, so they must be listed as textual_hdrs (staged as compile
+# inputs) rather than srcs (which would double-compile/duplicate symbols).
+_TEXTUAL_SRC = [
+    "kernel/generic/kernel_dgemm_4x4_lib.c",
+    "kernel/generic/kernel_sgemm_4x4_lib.c",
+    "kernel/generic/kernel_dgetrf_pivot_lib.c",
+    "auxiliary/x_aux_ext_dep.c",
+    "auxiliary/x_aux_ext_dep_common.c",
+    "blas_api/xgemm_ref.c",
+    "blas_api/xsyrk_ref.c",
+    "blas_api/xtrmm_ref.c",
+    "blas_api/xtrsm_ref.c",
+    "blas_api/xgetrf_ref.c",
+    "blas_api/xpotrf_ref.c",
+    "blasfeo_hp_pm/x_blas2_diag_lib.c",
+    # Also compiled as their own translation unit (in _BLASFEO_HP_CM_SRC)
+    # *and* textually #include-d by blas_api/{d,s}gemm_ref.c -- a file can
+    # be both a src and a textual_hdr of the same cc_library.
+    "blasfeo_hp_cm/dgemm.c",
+    "blasfeo_hp_cm/sgemm.c",
+]
+
+cc_library(
+    name = "blasfeo",
+    srcs = _AUX_COMMON_SRC + _KERNEL_GENERIC_SRC + _AUX_HP_PM_SRC +
+           _BLASFEO_HP_PM_SRC + _BLAS_SRC + _BLASFEO_HP_CM_SRC + _AUX_EXT_DEP_SRC,
+    hdrs = glob(["include/*.h"]) + [":gen_blasfeo_target_h"],
+    textual_hdrs = _TEXTUAL_SRC,
+    copts = [
+        "-O2",
+        "-fPIC",
+    ],
+    includes = ["include"],
+    local_defines = [
+        "TARGET_GENERIC",
+        "LA_HIGH_PERFORMANCE",
+        "MF_PANELMAJ",
+        "K_MAX_STACK=300",
+        "BLAS_API",
+        "USE_C99_MATH",
+        "EXT_DEP",
+        "OS_LINUX",
+    ],
+)

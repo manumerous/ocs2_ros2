@@ -1,0 +1,15 @@
+# Bazel registries: Bazel Central Registry for generic C++ deps, and the
+# ROS Central Registry (RCR) for ROS2 "Lyrical Luth" packages.
+# The RCR registry is listed first so its modules take precedence when a
+# name exists in both (e.g. RCR's newer `pinocchio` vs BCR's stale one).
+common --registry=https://intrinsic-opensource.github.io/ros-central-registry
+common --registry=https://bcr.bazel.build
+
+# Test hermeticity, per RCR's own guidance for ROS2 interface/codegen tests.
+test --sandbox_default_allow_network=false
+
+# The existing CMake build pins C++14 (see ocs2_core/cmake/ocs2_cxx_flags.cmake).
+# Preserve that as the project-wide default rather than silently bumping the
+# language standard as a side effect of this migration.
+build --cxxopt=-std=c++14
+build --host_cxxopt=-std=c++14

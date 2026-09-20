@@ -26,3 +26,6 @@ ocs2_ddp/test/ddp_test_generated/
 *.synctex.gz
 .vscode/
 runs/
+
+# Bazel convenience symlinks (bazel-bin, bazel-out, bazel-testlogs, bazel-<repo>)
+/bazel-*

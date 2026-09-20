@@ -1,0 +1,209 @@
+"""BUILD overlay for @hpipm (http_archive).
+
+hpipm has no Bazel build of its own. The source-file list below is
+transcribed from hpipm's own CMakeLists.txt defaults, which
+ocs2_sqp/hpipm_catkin/CMakeLists.txt does not override: TARGET=AVX (hpipm's
+own default -- note this is independent of BLASFEO's own TARGET, which is
+GENERIC; hpipm's TARGET only selects which of its *own* ipm_core aux sources
+to build), REF_BLAS=0, USE_C99_MATH=ON, RUNTIME_CHECKS=ON.
+"""
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+_COND_SRC = [
+    "cond/d_cond.c",
+    "cond/d_cond_aux.c",
+    "cond/d_part_cond.c",
+    "cond/d_cond_qcqp.c",
+    "cond/d_cast_qcqp.c",
+    "cond/d_part_cond_qcqp.c",
+    "cond/s_cond.c",
+    "cond/s_cond_aux.c",
+    "cond/s_part_cond.c",
+    "cond/s_cond_qcqp.c",
+    "cond/s_cast_qcqp.c",
+    "cond/s_part_cond_qcqp.c",
+]
+
+_DENSE_QP_SRC = [
+    "dense_qp/d_dense_qp.c",
+    "dense_qp/d_dense_qp_dim.c",
+    "dense_qp/d_dense_qp_sol.c",
+    "dense_qp/d_dense_qp_kkt.c",
+    "dense_qp/d_dense_qp_ipm.c",
+    "dense_qp/d_dense_qp_res.c",
+    "dense_qp/d_dense_qp_utils.c",
+    "dense_qp/d_dense_qcqp_dim.c",
+    "dense_qp/d_dense_qcqp.c",
+    "dense_qp/d_dense_qcqp_sol.c",
+    "dense_qp/d_dense_qcqp_res.c",
+    "dense_qp/d_dense_qcqp_ipm.c",
+    "dense_qp/d_dense_qcqp_utils.c",
+    "dense_qp/s_dense_qp.c",
+    "dense_qp/s_dense_qp_dim.c",
+    "dense_qp/s_dense_qp_sol.c",
+    "dense_qp/s_dense_qp_kkt.c",
+    "dense_qp/s_dense_qp_ipm.c",
+    "dense_qp/s_dense_qp_res.c",
+    "dense_qp/s_dense_qp_utils.c",
+    "dense_qp/s_dense_qcqp_dim.c",
+    "dense_qp/s_dense_qcqp.c",
+    "dense_qp/s_dense_qcqp_sol.c",
+    "dense_qp/s_dense_qcqp_res.c",
+    "dense_qp/s_dense_qcqp_ipm.c",
+    "dense_qp/s_dense_qcqp_utils.c",
+]
+
+# TARGET=AVX branch.
+_IPM_CORE_SRC = [
+    "ipm_core/d_core_qp_ipm_aux_avx.c",
+    "ipm_core/d_core_qp_ipm.c",
+    "ipm_core/s_core_qp_ipm_aux_avx.c",
+    "ipm_core/s_core_qp_ipm.c",
+]
+
+_OCP_QP_SRC = [
+    "ocp_qp/d_ocp_qp.c",
+    "ocp_qp/d_ocp_qp_dim.c",
+    "ocp_qp/d_ocp_qp_sol.c",
+    "ocp_qp/d_ocp_qp_kkt.c",
+    "ocp_qp/d_ocp_qp_ipm.c",
+    "ocp_qp/d_ocp_qp_res.c",
+    "ocp_qp/d_ocp_qp_utils.c",
+    "ocp_qp/d_ocp_qp_red.c",
+    "ocp_qp/d_ocp_qcqp.c",
+    "ocp_qp/d_ocp_qcqp_dim.c",
+    "ocp_qp/d_ocp_qcqp_sol.c",
+    "ocp_qp/d_ocp_qcqp_ipm.c",
+    "ocp_qp/d_ocp_qcqp_res.c",
+    "ocp_qp/d_ocp_qcqp_utils.c",
+    "ocp_qp/s_ocp_qp.c",
+    "ocp_qp/s_ocp_qp_dim.c",
+    "ocp_qp/s_ocp_qp_sol.c",
+    "ocp_qp/s_ocp_qp_kkt.c",
+    "ocp_qp/s_ocp_qp_ipm.c",
+    "ocp_qp/s_ocp_qp_res.c",
+    "ocp_qp/s_ocp_qp_utils.c",
+    "ocp_qp/s_ocp_qp_red.c",
+    "ocp_qp/s_ocp_qcqp.c",
+    "ocp_qp/s_ocp_qcqp_dim.c",
+    "ocp_qp/s_ocp_qcqp_sol.c",
+    "ocp_qp/s_ocp_qcqp_ipm.c",
+    "ocp_qp/s_ocp_qcqp_res.c",
+    "ocp_qp/s_ocp_qcqp_utils.c",
+]
+
+_TREE_OCP_QP_SRC = [
+    "tree_ocp_qp/scenario_tree.c",
+    "tree_ocp_qp/d_tree_ocp_qp_dim.c",
+    "tree_ocp_qp/d_tree_ocp_qp.c",
+    "tree_ocp_qp/d_tree_ocp_qp_sol.c",
+    "tree_ocp_qp/d_tree_ocp_qp_res.c",
+    "tree_ocp_qp/d_tree_ocp_qp_kkt.c",
+    "tree_ocp_qp/d_tree_ocp_qp_ipm.c",
+    "tree_ocp_qp/d_tree_ocp_qp_utils.c",
+    "tree_ocp_qp/d_tree_ocp_qcqp_dim.c",
+    "tree_ocp_qp/d_tree_ocp_qcqp.c",
+    "tree_ocp_qp/d_tree_ocp_qcqp_sol.c",
+    "tree_ocp_qp/d_tree_ocp_qcqp_res.c",
+    "tree_ocp_qp/d_tree_ocp_qcqp_ipm.c",
+    "tree_ocp_qp/d_tree_ocp_qcqp_utils.c",
+    "tree_ocp_qp/s_tree_ocp_qp_dim.c",
+    "tree_ocp_qp/s_tree_ocp_qp.c",
+    "tree_ocp_qp/s_tree_ocp_qp_sol.c",
+    "tree_ocp_qp/s_tree_ocp_qp_res.c",
+    "tree_ocp_qp/s_tree_ocp_qp_kkt.c",
+    "tree_ocp_qp/s_tree_ocp_qp_ipm.c",
+    "tree_ocp_qp/s_tree_ocp_qp_utils.c",
+    "tree_ocp_qp/s_tree_ocp_qcqp_dim.c",
+    "tree_ocp_qp/s_tree_ocp_qcqp.c",
+    "tree_ocp_qp/s_tree_ocp_qcqp_sol.c",
+    "tree_ocp_qp/s_tree_ocp_qcqp_res.c",
+    "tree_ocp_qp/s_tree_ocp_qcqp_ipm.c",
+    "tree_ocp_qp/s_tree_ocp_qcqp_utils.c",
+]
+
+_AUXILIARY_SRC = [
+    "auxiliary/aux_string.c",
+    "auxiliary/aux_mem.c",
+    "auxiliary/timing.c",
+]
+
+# Like blasfeo, hpipm's d_*.c/s_*.c files are thin wrappers that #include a
+# shared, un-prefixed "x_*.c" template file living in the same directory
+# (compiled twice, once per precision, via type macros #define-d before the
+# #include) -- these must be staged as textual_hdrs, not compiled as their
+# own srcs.
+_TEXTUAL_SRC = [
+    "cond/x_cast_qcqp.c",
+    "cond/x_cond.c",
+    "cond/x_cond_aux.c",
+    "cond/x_cond_qcqp.c",
+    "cond/x_part_cond.c",
+    "cond/x_part_cond_qcqp.c",
+    "dense_qp/x_dense_qcqp.c",
+    "dense_qp/x_dense_qcqp_dim.c",
+    "dense_qp/x_dense_qcqp_ipm.c",
+    "dense_qp/x_dense_qcqp_res.c",
+    "dense_qp/x_dense_qcqp_sol.c",
+    "dense_qp/x_dense_qcqp_utils.c",
+    "dense_qp/x_dense_qp.c",
+    "dense_qp/x_dense_qp_dim.c",
+    "dense_qp/x_dense_qp_ipm.c",
+    "dense_qp/x_dense_qp_kkt.c",
+    "dense_qp/x_dense_qp_res.c",
+    "dense_qp/x_dense_qp_sol.c",
+    "dense_qp/x_dense_qp_utils.c",
+    "ipm_core/x_core_qp_ipm.c",
+    "ipm_core/x_core_qp_ipm_aux.c",
+    "ocp_qp/x_ocp_qcqp.c",
+    "ocp_qp/x_ocp_qcqp_dim.c",
+    "ocp_qp/x_ocp_qcqp_ipm.c",
+    "ocp_qp/x_ocp_qcqp_res.c",
+    "ocp_qp/x_ocp_qcqp_sol.c",
+    "ocp_qp/x_ocp_qcqp_utils.c",
+    "ocp_qp/x_ocp_qp.c",
+    "ocp_qp/x_ocp_qp_dim.c",
+    "ocp_qp/x_ocp_qp_ipm.c",
+    "ocp_qp/x_ocp_qp_kkt.c",
+    "ocp_qp/x_ocp_qp_red.c",
+    "ocp_qp/x_ocp_qp_res.c",
+    "ocp_qp/x_ocp_qp_sol.c",
+    "ocp_qp/x_ocp_qp_utils.c",
+    "tree_ocp_qp/x_tree_ocp_qcqp.c",
+    "tree_ocp_qp/x_tree_ocp_qcqp_dim.c",
+    "tree_ocp_qp/x_tree_ocp_qcqp_ipm.c",
+    "tree_ocp_qp/x_tree_ocp_qcqp_res.c",
+    "tree_ocp_qp/x_tree_ocp_qcqp_sol.c",
+    "tree_ocp_qp/x_tree_ocp_qcqp_utils.c",
+    "tree_ocp_qp/x_tree_ocp_qp.c",
+    "tree_ocp_qp/x_tree_ocp_qp_dim.c",
+    "tree_ocp_qp/x_tree_ocp_qp_ipm.c",
+    "tree_ocp_qp/x_tree_ocp_qp_kkt.c",
+    "tree_ocp_qp/x_tree_ocp_qp_res.c",
+    "tree_ocp_qp/x_tree_ocp_qp_sol.c",
+    "tree_ocp_qp/x_tree_ocp_qp_utils.c",
+]
+
+cc_library(
+    name = "hpipm",
+    srcs = _COND_SRC + _DENSE_QP_SRC + _IPM_CORE_SRC + _OCP_QP_SRC +
+           _TREE_OCP_QP_SRC + _AUXILIARY_SRC,
+    hdrs = glob(["include/**/*.h"]),
+    textual_hdrs = _TEXTUAL_SRC,
+    copts = [
+        "-O2",
+        "-fPIC",
+        "-m64",
+        "-mavx",
+    ],
+    includes = ["include"],
+    local_defines = [
+        "TARGET_AVX",
+        "USE_C99_MATH",
+        "RUNTIME_CHECKS",
+    ],
+    deps = ["@blasfeo"],
+)

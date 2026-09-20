@@ -1,0 +1,27 @@
+"""RobCoGen runtime support headers ("iit/rbd/...").
+
+Genuinely vendored in-tree: there is no standalone upstream repo to fetch
+these from (they're a RobCoGen code-generator runtime support header set),
+so unlike cppad/cppadcodegen/blasfeo/hpipm this stays as plain committed
+source -- just moved out of the old ocs2_thirdparty ament package into its
+own directory with a hand-written BUILD.bazel.
+
+Consumed by RobCoGen-generated code in
+ocs2_robotic_examples/ocs2_ballbot/include/ocs2_ballbot/generated and
+ocs2_ballbot/src/dynamics/BallbotSystemDynamics.cpp.
+"""
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "iit_rbd",
+    hdrs = glob(["include/iit/rbd/**/*.h"]),
+    includes = ["include"],
+    deps = [
+        "@cppad",
+        "@cppadcodegen",
+        "@eigen",
+    ],
+)

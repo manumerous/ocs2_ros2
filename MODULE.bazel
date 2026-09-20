@@ -1,0 +1,202 @@
+"""
+Bazel bzlmod build for the "active ROS2 tree" of ocs2_ros2.
+
+This covers the subset of packages reachable from the ament_cmake ROS2 build
+(see the migration plan for the full package scope). The legacy catkin/ROS1
+tree elsewhere in this repo is untouched and still colcon-buildable; it is not
+part of this Bazel graph.
+
+Dependencies come from:
+  - the Bazel Central Registry (BCR) for generic C++ deps (Eigen, Boost, ...)
+  - the ROS Central Registry (RCR) for ROS2 "Lyrical Luth" packages
+  - http_archive for the handful of libraries with no registry module at all
+    (cppad, cppadcodegen, blasfeo, hpipm, ocs2_robotic_assets)
+"""
+
+module(
+    name = "ocs2_ros2",
+    version = "0.1.0",
+)
+
+# ---------------------------------------------------------------------------
+# BCR: generic build tooling + C++ deps
+# ---------------------------------------------------------------------------
+
+bazel_dep(name = "bazel_skylib", version = "1.9.2")
+bazel_dep(name = "rules_cc", version = "0.2.25")
+bazel_dep(name = "platforms", version = "1.1.0")
+
+# DEVIATION FROM PLAN: the plan called for eigen 3.4.0.bcr.3 "to avoid a
+# version-conflict override", but in practice something else in the resolved
+# BCR graph (not any RCR/ROS module -- none of them declare a bazel_dep on
+# `eigen` or `boost.*` at all) already forces eigen up to 5.0.1.bcr.1 and the
+# boost.* modules up to 1.90.0.bcr.1 via MVS. Pinning the older versions here
+# only produced a bzlmod direct-dependency-version warning, not a different
+# resolved graph, so we pin to the versions that actually get resolved.
+# NOTE: Eigen 5.x has real API/ABI differences from 3.4 (e.g. some deprecated
+# headers/aliases removed) -- expect this to need the same kind of
+# compile-and-fix pass as the pinocchio 4.x delta once ocs2_core is built.
+bazel_dep(name = "eigen", version = "5.0.1.bcr.1")
+
+# All three pinned together to the same underlying Boost release actually
+# resolved by MVS (see note above -- 1.87.0 as called for by the plan gets
+# silently overridden anyway).
+bazel_dep(name = "boost.system", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.filesystem", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.log", version = "1.90.0.bcr.1")
+
+bazel_dep(name = "googletest", version = "1.17.0.bcr.2", dev_dependency = True)
+
+# ---------------------------------------------------------------------------
+# RCR: ROS2 "Lyrical Luth" packages
+#
+# IMPORTANT: pin every RCR module to the *.rcr.1 patch, not just "whatever is
+# latest per-module". `ros_core` (the actual Lyrical Luth distro "bundle"
+# module, lyrical.2026-06-08.rcr.1) pins its whole graph at .rcr.1 uniformly,
+# and mixing in a newer .rcr.2 of just one module (tried initially for
+# rclcpp/ament_index_cpp/rosidl_default_generators/kdl_parser/
+# robot_state_publisher) breaks bzlmod's MVS-resolved graph: e.g. rclcpp's
+# .rcr.2 overlay expects a newer `ament_cmake_gen_version_h` than what's
+# consistent with the rest of the .rcr.1 graph, and
+# rosidl_default_generators' .rcr.2 expects a `rosidl_core_generators`
+# symbol (`proto_ros_library`) that .rcr.1's `rosidl_core_generators` (the
+# version actually resolved) doesn't have. Both failed with real Starlark
+# "does not contain symbol" load errors during `bazel query`. Sticking to
+# the coherent .rcr.1 bundle resolves cleanly.
+# ---------------------------------------------------------------------------
+
+bazel_dep(name = "rclcpp", version = "32.0.0-1.rcr.1")
+bazel_dep(name = "rclcpp_action", version = "32.0.0-1.rcr.1")
+bazel_dep(name = "ament_index_cpp", version = "1.13.3-3.rcr.1")
+bazel_dep(name = "std_msgs", version = "5.9.2-3.rcr.1")
+bazel_dep(name = "geometry_msgs", version = "5.9.2-3.rcr.1")
+bazel_dep(name = "sensor_msgs", version = "5.9.2-3.rcr.1")
+bazel_dep(name = "visualization_msgs", version = "5.9.2-3.rcr.1")
+bazel_dep(name = "common_interfaces", version = "5.9.2-3.rcr.1")
+bazel_dep(name = "interactive_markers", version = "2.8.4-1.rcr.1")
+bazel_dep(name = "tf2_ros", version = "0.45.7-3.rcr.1")
+bazel_dep(name = "urdf", version = "2.13.2-3.rcr.1")
+bazel_dep(name = "urdfdom", version = "6.0.0-3.rcr.1")
+bazel_dep(name = "kdl_parser", version = "3.0.1-3.rcr.1")
+bazel_dep(name = "robot_state_publisher", version = "3.5.5-3.rcr.1")
+bazel_dep(name = "rosidl_default_generators", version = "1.8.1-3.rcr.1")
+bazel_dep(name = "rosidl_adapter", version = "5.2.1-1.rcr.1")
+bazel_dep(name = "rosidl_generator_cpp", version = "5.2.1-1.rcr.1")
+bazel_dep(name = "rosidl_typesupport_cpp", version = "3.4.2-3.rcr.1")
+
+# NOTE: RCR's own `pinocchio` module (4.0.0-2.rcr.1) currently registers only
+# an `ament_package` bookkeeping target -- its upstream release-mirror tarball
+# ships zero BUILD.bazel files, so there is no real cc_library here yet. Kept
+# declared (harmless) while the real Pinocchio build is sorted out -- see the
+# phase 3 progress report for details.
+bazel_dep(name = "pinocchio", version = "4.0.0-2.rcr.1")
+
+# ---------------------------------------------------------------------------
+# http_archive: no registry module exists for these
+# ---------------------------------------------------------------------------
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+# CppAD ships include/cppad/configure.hpp.in, normally substituted by its
+# autoconf/CMake build. There's no Bazel-side substitution step here, so we
+# write the same already-substituted configure.hpp that's committed today in
+# ocs2_thirdparty/include/cppad/configure.hpp (produced by a real CppAD build
+# once) directly into the fetched archive via patch_cmds -- same technique
+# registries use via their `overlay` files, just inlined since this is the
+# only generated file CppAD needs.
+_CPPAD_CONFIGURE_HPP = """\
+# ifndef CPPAD_CONFIGURE_HPP
+# define CPPAD_CONFIGURE_HPP
+# define CPPAD_COMPILER_HAS_CONVERSION_WARN 1
+# define CPPAD_DISABLE_SOME_MICROSOFT_COMPILER_WARNINGS 1
+# if _MSC_VER
+# pragma warning( disable : 4100 )
+# pragma warning( disable : 4127 )
+# endif
+# undef CPPAD_DISABLE_SOME_MICROSOFT_COMPILER_WARNINGS
+# if     _MSC_VER
+# define    CPPAD_USE_CPLUSPLUS_2011 1
+# else   //
+# if         __cplusplus >= 201100
+# define         CPPAD_USE_CPLUSPLUS_2011 1
+# else       //
+# define         CPPAD_USE_CPLUSPLUS_2011 0
+# endif      //
+# endif //
+# define CPPAD_PACKAGE_STRING "cppad-20190200.5"
+# define CPPAD_HAS_ADOLC 0
+# define CPPAD_HAS_COLPACK 0
+# define CPPAD_HAS_EIGEN 0
+# define CPPAD_HAS_IPOPT 0
+# define CPPAD_DEPRECATED
+# define CPPAD_BOOSTVECTOR 0
+# define CPPAD_CPPADVECTOR 1
+# define CPPAD_STDVECTOR 0
+# define CPPAD_EIGENVECTOR 0
+# define CPPAD_HAS_GETTIMEOFDAY 1
+# define CPPAD_TAPE_ADDR_TYPE unsigned int
+# define CPPAD_TAPE_ID_TYPE unsigned int
+# ifndef CPPAD_MAX_NUM_THREADS
+# define CPPAD_MAX_NUM_THREADS 48
+# endif
+# define CPPAD_HAS_MKSTEMP 1
+# define CPPAD_HAS_TMPNAM_S 0
+# ifndef CPPAD_NULL
+# if CPPAD_USE_CPLUSPLUS_2011
+# define CPPAD_NULL     nullptr
+# else
+# define CPPAD_NULL     0
+# endif
+# endif
+# endif
+"""
+
+# CppAD -- vendored today under ocs2_thirdparty/include/cppad.
+http_archive(
+    name = "cppad",
+    build_file = "//third_party/cppad:BUILD.cppad.bazel",
+    patch_cmds = [
+        "cat > include/cppad/configure.hpp << 'CPPAD_CONFIGURE_HPP_EOF'\n" +
+        _CPPAD_CONFIGURE_HPP + "CPPAD_CONFIGURE_HPP_EOF",
+    ],
+    sha256 = "3b89e2a88c4fc7e263c67787e4dde2d3be5a786f389d9c608d21a1acffcee16a",
+    strip_prefix = "CppAD-20190200.5",
+    url = "https://github.com/coin-or/CppAD/archive/refs/tags/20190200.5.tar.gz",
+)
+
+# CppADCodeGen -- vendored today under ocs2_thirdparty/include/cppad/cg.
+http_archive(
+    name = "cppadcodegen",
+    build_file = "//third_party/cppadcodegen:BUILD.cppadcodegen.bazel",
+    sha256 = "fcbdf33d6957cfdc5d59123ad63ce4763690a895a234fbf551956f9bdd872e2d",
+    strip_prefix = "CppADCodeGen-f3680f154c32f269123e6eea1531bb9030ad40ba",
+    url = "https://github.com/joaoleal/CppADCodeGen/archive/f3680f154c32f269123e6eea1531bb9030ad40ba.tar.gz",
+)
+
+# BLASFEO -- fetched today via FetchContent in ocs2_sqp/blasfeo_catkin.
+http_archive(
+    name = "blasfeo",
+    build_file = "//third_party/blasfeo:BUILD.blasfeo.bazel",
+    sha256 = "da6e64f0e32018e40c6a189f012c0c74ce555c2c7b7b049ea1b7d63ced280e3a",
+    strip_prefix = "blasfeo-ae6e2d1dea015862a09990b95905038a756ffc7d",
+    url = "https://github.com/giaf/blasfeo/archive/ae6e2d1dea015862a09990b95905038a756ffc7d.tar.gz",
+)
+
+# HPIPM -- fetched today via FetchContent in ocs2_sqp/hpipm_catkin.
+http_archive(
+    name = "hpipm",
+    build_file = "//third_party/hpipm:BUILD.hpipm.bazel",
+    sha256 = "8c58e462f696809adea2278f697c46553569358a17ae7bf919d53590b8ff6e4a",
+    strip_prefix = "hpipm-255ffdf38d3a5e2c3285b29568ce65ae286e5faf",
+    url = "https://github.com/giaf/hpipm/archive/255ffdf38d3a5e2c3285b29568ce65ae286e5faf.tar.gz",
+)
+
+# ocs2_robotic_assets -- URDFs/meshes, external repo cloned by CI today.
+# Pinned to the HEAD of `main` as of 2026-09-20.
+http_archive(
+    name = "ocs2_robotic_assets",
+    build_file = "//third_party/ocs2_robotic_assets:BUILD.ocs2_robotic_assets.bazel",
+    sha256 = "f1a68716aaa8ee5e0fdb77b3ed4bd43b4ffe2acb9c38f12aae9ee9e048921318",
+    strip_prefix = "ocs2_robotic_assets-b126d00d55f1e67905c3c1516995466df6873c5c",
+    url = "https://github.com/leggedrobotics/ocs2_robotic_assets/archive/b126d00d55f1e67905c3c1516995466df6873c5c.tar.gz",
+)

@@ -1,0 +1,29 @@
+"""BUILD overlay for @ocs2_robotic_assets (http_archive).
+
+URDFs/meshes for ocs2_ballbot_ros, ocs2_double_integrator_ros and
+ocs2_legged_robot_ros. No registry module exists for this repo (it isn't
+vendored anywhere in ocs2_ros2 today either -- CI just clones it), so it's
+pinned via http_archive to the HEAD of `main` as of 2026-09-20
+(b126d00d55f1e67905c3c1516995466df6873c5c).
+
+Placeholder for phase 1/2 dependency-graph wiring; the actual `data`/
+`ros_data` wiring into the example binaries, and a Bazel-appropriate
+replacement for the package's own CMake-`configure_file`'d
+`include/ocs2_robotic_assets/package_path.h` (which bakes in an absolute
+`${PROJECT_SOURCE_DIR}` path -- not meaningful inside a Bazel sandbox/
+runfiles tree), are finished in phase 5.
+"""
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "resources",
+    srcs = glob(["resources/**"]),
+)
+
+# TODO(phase 5): generate include/ocs2_robotic_assets/package_path.h with a
+# runfiles-relative path instead of upstream's absolute
+# ${PROJECT_SOURCE_DIR}, and export it from a cc_library alongside
+# `:resources` wired into the example binaries via `data`.
