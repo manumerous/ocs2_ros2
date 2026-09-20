@@ -1,0 +1,39 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:ocs2_cxx_flags.bzl", "OCS2_LINKOPTS", "OCS2_ROS2_COPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+# NOTE: the original CMakeLists.txt's own test target
+# (ocs2_centroidal_model_test, testAnymalCentroidalModel.cpp) is entirely
+# commented out -- no active target to mirror here.
+cc_library(
+    name = "ocs2_centroidal_model",
+    srcs = [
+        "src/CentroidalModelInfo.cpp",
+        "src/CentroidalModelPinocchioMapping.cpp",
+        "src/CentroidalModelRbdConversions.cpp",
+        "src/FactoryFunctions.cpp",
+        "src/ModelHelperFunctions.cpp",
+        "src/PinocchioCentroidalDynamics.cpp",
+        "src/PinocchioCentroidalDynamicsAD.cpp",
+    ],
+    hdrs = glob(["include/**/*.h"]),
+    copts = OCS2_ROS2_COPTS + [
+        "-Wno-ignored-attributes",
+        # "-Wno-invalid-partial-specialization" from the original
+        # CMakeLists.txt is a Clang-only flag ("to silence warning with
+        # unsupported Eigen Tensor"); GCC doesn't recognize it at all
+        # (harmless "unrecognized command-line option" note, but not
+        # worth carrying over on a toolchain where it does nothing).
+    ],
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = [
+        "//ocs2_core",
+        "//ocs2_pinocchio/ocs2_pinocchio_interface",
+        "//ocs2_robotic_tools",
+        "@pinocchio",
+        "@urdf//:urdf_library",
+        "@urdfdom//:urdfdom_library",
+    ],
+)

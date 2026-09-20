@@ -77,7 +77,14 @@ cc_library(
         "-Wno-deprecated-declarations",
     ],
     includes = ["include"],
-    local_defines = [
+    # `defines` (transitive), not `local_defines`: pinocchio is
+    # overwhelmingly header-only, so these macros need to be visible in
+    # every *consumer* TU that instantiates pinocchio's templates too
+    # (e.g. ocs2_pinocchio_interface's own urdf.cpp hits the exact same
+    # 25-arg boost::variant instantiation as pinocchio's own urdf/
+    # model.cpp does) -- local_defines alone only covers pinocchio's own
+    # 3 .cpp files and silently leaves every downstream package broken.
+    defines = [
         "PINOCCHIO_WITH_URDFDOM",
         "PINOCCHIO_WITH_CPPAD_SUPPORT",
         "PINOCCHIO_WITH_CPPADCG_SUPPORT",
@@ -98,6 +105,17 @@ cc_library(
         # boost.mpl at all; the real CMake build must set these too.
         "BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS",
         "BOOST_MPL_LIMIT_LIST_SIZE=30",
+        # pinocchio's joint-visitor machinery
+        # (pinocchio/src/multibody/visitor/joint-unary-visitor.hxx) calls
+        # through boost::fusion::invoke with 7 arguments (model, data,
+        # joint index, reference frame, 2 Eigen::Ref out-params, plus the
+        # joint model itself) for algorithms like
+        # getFrameVelocityDerivatives; boost.fusion's invoke machinery
+        # only generates overloads up to BOOST_FUSION_INVOKE_MAX_ARITY
+        # (default 6) unless raised, else it's an "incomplete type" error
+        # for the 7-arg specialization. Same "not specific to our
+        # overlay" situation as the boost.mpl defines above.
+        "BOOST_FUSION_INVOKE_MAX_ARITY=10",
     ],
     deps = [
         "@boost.asio",

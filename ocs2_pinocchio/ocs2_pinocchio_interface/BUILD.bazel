@@ -1,0 +1,39 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:ocs2_cxx_flags.bzl", "OCS2_LINKOPTS", "OCS2_ROS2_COPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+# NOTE: the original CMakeLists.txt's own test target (testPinocchioInterface,
+# covering test/testPinocchioInterface.cpp and
+# test/testPinocchioEndEffectorKinematics.cpp) is entirely commented out --
+# no active target to mirror here.
+#
+# OCS2_ROS2_COPTS (C++17) is reused here even though this package has
+# nothing to do with ROS2 -- pinocchio 4.x itself requires C++17
+# (`set(CMAKE_CXX_STANDARD 17)` in this package's own original
+# CMakeLists.txt too), for the same "solver core stays C++14, anything
+# that must touch a C++17-only dependency doesn't" reasoning.
+cc_library(
+    name = "ocs2_pinocchio_interface",
+    srcs = [
+        "src/PinocchioEndEffectorKinematics.cpp",
+        "src/PinocchioEndEffectorKinematicsCppAd.cpp",
+        "src/PinocchioInterface.cpp",
+        "src/PinocchioInterfaceCppAd.cpp",
+        "src/urdf.cpp",
+    ],
+    hdrs = glob(["include/**/*.h"]),
+    copts = OCS2_ROS2_COPTS + [
+        "-Wno-ignored-attributes",
+    ],
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = [
+        "//ocs2_core",
+        "//ocs2_oc",
+        "//ocs2_robotic_tools",
+        "@pinocchio",
+        "@urdf//:urdf_library",
+        "@urdfdom//:urdfdom_library",
+    ],
+)
