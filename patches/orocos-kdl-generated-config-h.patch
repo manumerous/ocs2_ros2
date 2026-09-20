@@ -1,0 +1,12 @@
+--- /dev/null
++++ b/src/config.h
+@@ -0,0 +1,9 @@
++#ifndef KDL_CONFIG_H
++#define KDL_CONFIG_H
++#define KDL_VERSION_MAJOR 1
++#define KDL_VERSION_MINOR 5
++#define KDL_VERSION_PATCH 1
++#define KDL_VERSION (KDL_VERSION_MAJOR << 16) | (KDL_VERSION_MINOR << 8) | KDL_VERSION_PATCH
++#define KDL_VERSION_STRING "1.5.1"
++#define KDL_USE_NEW_TREE_INTERFACE
++#endif

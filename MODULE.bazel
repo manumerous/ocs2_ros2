@@ -117,8 +117,12 @@ bazel_dep(name = "interactive_markers", version = "2.8.4-1.rcr.1")
 bazel_dep(name = "tf2_ros", version = "0.45.7-3.rcr.1")
 bazel_dep(name = "urdf", version = "2.13.2-3.rcr.1")
 bazel_dep(name = "urdfdom", version = "6.0.0-3.rcr.1")
-bazel_dep(name = "kdl_parser", version = "3.0.1-3.rcr.1")
 bazel_dep(name = "robot_state_publisher", version = "3.5.5-3.rcr.1")
+
+# Needed directly by kdl_parser's real overlay below (rcutils::rcutils is
+# a PRIVATE link dep of kdl_parser upstream) -- transitively present via
+# rclcpp already, but not re-exported under this name.
+bazel_dep(name = "rcutils", version = "7.1.1-3.rcr.1")
 bazel_dep(name = "rosidl_default_generators", version = "1.8.1-3.rcr.1")
 bazel_dep(name = "rosidl_adapter", version = "5.2.1-1.rcr.1")
 bazel_dep(name = "rosidl_generator_cpp", version = "5.2.1-1.rcr.1")
@@ -332,6 +336,48 @@ http_archive(
     sha256 = "e9ca048fd6c6e3f9e25ca691c7517c6cfdeb5218f03621dbe15ddeb7de2f9a1a",
     strip_prefix = "pinocchio-4.0.0",
     urls = ["https://github.com/stack-of-tasks/pinocchio/archive/refs/tags/v4.0.0.tar.gz"],
+)
+
+# orocos_kdl + kdl_parser -- same situation as pinocchio above: RCR's own
+# `kdl_parser` module (removed above, where its bazel_dep used to be)
+# registers only an ament-bookkeeping stub, and its real dependency
+# `orocos_kdl` has no RCR *or* BCR module at all. Unlike pinocchio,
+# orocos_kdl turned out to be a small, plain, non-template-heavy C++
+# library (~60 files, no per-feature source subsets, no boost.mpl/
+# boost.fusion arity surprises) -- confirmed by actually reading its
+# real CMakeLists.txt before assuming that, per the plan for this scope
+# expansion.
+http_archive(
+    name = "orocos_kdl",
+    build_file = "//third_party/orocos_kdl:BUILD.orocos_kdl.bazel",
+    patch_args = ["-p1"],
+    # src/config.h.in needs a real configure_file substitution
+    # (KDL_VERSION_MAJOR/MINOR/PATCH, KDL_USE_NEW_TREE_INTERFACE) --
+    # rendered by hand from the tag's own top-level CMakeLists.txt
+    # (SET(KDL_VERSION 1.5.1), and the "modern default" branch of the
+    # HAVE_STL_CONTAINER_INCOMPLETE_TYPES/KDL_USE_NEW_TREE_INTERFACE
+    # logic) and added as a real new-file patch, same technique as
+    # pinocchio's generated headers -- tried a `write_file` generated
+    # hdr through strip_include_prefix/include_prefix first, but the
+    # quoted `#include "config.h"` from tree.hpp couldn't find it there
+    # (a real, patched-in file works reliably; a generated one interacting
+    # with that include remapping did not, and wasn't worth chasing
+    # further given a working alternative existed).
+    patches = ["//patches:orocos-kdl-generated-config-h.patch"],
+    sha256 = "5acb90acd82b10971717aca6c17874390762ecdaa3a8e4db04984ea1d4a2af9b",
+    strip_prefix = "orocos_kinematics_dynamics-1.5.1/orocos_kdl",
+    urls = ["https://github.com/orocos/orocos_kinematics_dynamics/archive/refs/tags/v1.5.1.tar.gz"],
+)
+
+# Real ros2-gbp/kdl_parser-release source (the exact same tarball RCR's
+# own stub `kdl_parser` module points at -- see its source.json -- just
+# with a real BUILD.bazel this time).
+http_archive(
+    name = "kdl_parser",
+    build_file = "//third_party/kdl_parser:BUILD.kdl_parser.bazel",
+    sha256 = "c88bb839fa0826566e2f8f5dee38112c40c2d36b34770d1619cda8861262af0c",
+    strip_prefix = "kdl_parser-release-release-lyrical-kdl_parser-3.0.1-3",
+    url = "https://github.com/ros2-gbp/kdl_parser-release/archive/refs/tags/release/lyrical/kdl_parser/3.0.1-3.tar.gz",
 )
 
 # ocs2_robotic_assets -- URDFs/meshes, external repo cloned by CI today.

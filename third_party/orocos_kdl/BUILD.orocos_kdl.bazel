@@ -1,0 +1,53 @@
+"""BUILD overlay for @orocos_kdl (http_archive, real upstream v1.5.1).
+
+Needed transitively: kdl_parser (RCR's own module is an ament-bookkeeping
+stub, same situation as pinocchio) needs a real orocos_kdl to build
+against, and orocos_kdl itself has no RCR/BCR module of its own -- unlike
+pinocchio, this one is a plain, traditional (non-template-heavy) C++
+library with no per-feature source subsets to pick apart: its own
+CMakeLists.txt just globs every .cpp/.cxx under src/ unconditionally, so
+this overlay does the same via `glob()` instead of hand-enumerating the
+~60 files (avoids transcription errors, and there's nothing here to
+selectively exclude the way pinocchio's collision/casadi/etc. modules
+needed to be).
+
+`config.h` is generated from src/config.h.in the same way pinocchio's
+generated headers were, but this one is a real CMake `configure_file`
+call this package's own (fully included, no missing submodule) CMakeLists
+performs -- rendered here with KDL_VERSION=1.5.1 (matching the fetched
+tag) and KDL_USE_NEW_TREE_INTERFACE defined (the modern default: `if
+(HAVE_STL_CONTAINER_INCOMPLETE_TYPES) ... else ... ON`, and no current
+STL has that incomplete-types limitation).
+
+Headers are consumed as `#include "kdl/frames.hpp"` etc (confirmed
+against kdl_parser's own source) even though the real directory is named
+`src/`, not `kdl/` -- upstream's own CMake `install()` step renames/
+relocates headers from src/ to include/kdl/ on a real install; Bazel has
+no such step, so `strip_include_prefix`/`include_prsefix` remap the
+effective include path the same way instead.
+"""
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "orocos_kdl",
+    srcs = glob([
+        "src/*.cpp",
+        "src/utilities/*.cxx",
+    ]),
+    hdrs = glob([
+        "src/*.h",
+        "src/*.hpp",
+        "src/*.inl",
+        "src/utilities/*.h",
+        "src/utilities/*.hpp",
+    ]),
+    include_prefix = "kdl",
+    strip_include_prefix = "src",
+    deps = [
+        "@boost.smart_ptr",
+        "@eigen",
+    ],
+)
