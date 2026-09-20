@@ -56,6 +56,35 @@ bazel_dep(name = "boost.property_tree", version = "1.90.0.bcr.1")
 bazel_dep(name = "boost.smart_ptr", version = "1.90.0.bcr.1")
 bazel_dep(name = "boost.tokenizer", version = "1.90.0.bcr.1")
 
+# Required by @pinocchio (see third_party/pinocchio/BUILD.pinocchio.bazel):
+# fusion/variant/math/mpl/preprocessor/type_traits/optional/foreach/bind/
+# container are header-only, pulled in by the core kinematics/multibody
+# path. serialization/asio/iostreams come in transitively via
+# pinocchio/serialization/* headers included from multibody.hpp -- still
+# header-only here since nothing on our path instantiates a Boost archive.
+# filesystem/property_tree/logic are for the compiled MJCF parser in
+# pinocchio_parsers (not actually used by OCS2, kept for parity with what
+# a full pinocchio build expects to link).
+bazel_dep(name = "boost.fusion", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.variant", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.math", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.mpl", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.preprocessor", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.type_traits", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.optional", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.foreach", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.bind", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.container", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.serialization", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.asio", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.iostreams", version = "1.90.0.bcr.2")
+bazel_dep(name = "boost.logic", version = "1.90.0.bcr.1")
+
+# Needed directly by pinocchio's URDF parser (urdf_model/*.h types);
+# @urdfdom itself already depends on this transitively but doesn't
+# re-export the label, so it must be a direct dep to reference by name.
+bazel_dep(name = "urdfdom_headers", version = "3.0.0-3.rcr.1")
+
 bazel_dep(name = "googletest", version = "1.17.0.bcr.2", dev_dependency = True)
 
 # ---------------------------------------------------------------------------
@@ -102,12 +131,18 @@ bazel_dep(name = "rosidl_typesupport_cpp", version = "3.4.2-3.rcr.1")
 # ros_interface target, which is why this wasn't caught until phase 4.
 bazel_dep(name = "rosdistro", version = "lyrical.2026-06-08.rcr.1")
 
-# NOTE: RCR's own `pinocchio` module (4.0.0-2.rcr.1) currently registers only
-# an `ament_package` bookkeeping target -- its upstream release-mirror tarball
-# ships zero BUILD.bazel files, so there is no real cc_library here yet. Kept
-# declared (harmless) while the real Pinocchio build is sorted out -- see the
-# phase 3 progress report for details.
-bazel_dep(name = "pinocchio", version = "4.0.0-2.rcr.1")
+# DEVIATION FROM THE PLAN / earlier phase-3 report: RCR's own `pinocchio`
+# module (4.0.0-2.rcr.1) registers only an `ament_package` bookkeeping
+# target -- its upstream release-mirror tarball ships zero BUILD.bazel
+# files. Rather than leave this blocked, `@pinocchio` is now instead a
+# hand-overlaid `http_archive` fetching real upstream
+# stack-of-tasks/pinocchio directly (see the http_archive call below and
+# third_party/pinocchio/BUILD.pinocchio.bazel) -- the RCR module's
+# bazel_dep is removed entirely rather than kept alongside it, since
+# nothing else in this graph's dependency closure requires a bazel_dep
+# named "pinocchio" of its own (it was a leaf, added here only for OCS2's
+# own use), and a http_archive can't coexist with a bazel_dep of the same
+# name.
 
 # Matches the version every RCR module in this graph already bazel_deps on.
 bazel_dep(name = "rules_python", version = "2.2.0")
@@ -262,6 +297,41 @@ http_archive(
     sha256 = "8c58e462f696809adea2278f697c46553569358a17ae7bf919d53590b8ff6e4a",
     strip_prefix = "hpipm-255ffdf38d3a5e2c3285b29568ce65ae286e5faf",
     url = "https://github.com/giaf/hpipm/archive/255ffdf38d3a5e2c3285b29568ce65ae286e5faf.tar.gz",
+)
+
+# Pinocchio -- real upstream stack-of-tasks/pinocchio, replacing the
+# blocked RCR `pinocchio` module (see the note above where that bazel_dep
+# used to be). URL/sha256/strip_prefix/patches/patch_args match exactly
+# what was specified when this scope expansion was approved; the sha256
+# below is what Bazel's own fetch reports for this URL, which matches the
+# value given at the time. `build_file` (a real file, not inlined
+# `build_file_content`) is used instead, for consistency with every other
+# http_archive overlay in this file (cppad/cppadcodegen/blasfeo/hpipm) --
+# a large cc_library definition is far more reviewable/maintainable as
+# its own file than as a giant embedded string here.
+#
+# NOTE: split into 4 separate single-hunk patch files rather than one
+# combined patch (which was the user-specified starting point). Bazel's
+# built-in `ctx.patch` patch parser (used for `http_archive.patches`) has
+# a real limitation with multiple new-file ("--- /dev/null") hunks in one
+# patch file -- it applies the first hunk fine but then fails the rest
+# with "old file name is not specified, new file name ... doesn't exist",
+# even though the exact same patch content applies cleanly with GNU
+# `patch -p1` standalone (verified directly). One patch file per
+# generated header sidesteps it.
+http_archive(
+    name = "pinocchio",
+    build_file = "//third_party/pinocchio:BUILD.pinocchio.bazel",
+    patch_args = ["-p1"],
+    patches = [
+        "//patches:pinocchio-generated-config-hpp.patch",
+        "//patches:pinocchio-generated-deprecated-hpp.patch",
+        "//patches:pinocchio-generated-warning-hpp.patch",
+        "//patches:pinocchio-generated-parsers-config-hpp.patch",
+    ],
+    sha256 = "e9ca048fd6c6e3f9e25ca691c7517c6cfdeb5218f03621dbe15ddeb7de2f9a1a",
+    strip_prefix = "pinocchio-4.0.0",
+    urls = ["https://github.com/stack-of-tasks/pinocchio/archive/refs/tags/v4.0.0.tar.gz"],
 )
 
 # ocs2_robotic_assets -- URDFs/meshes, external repo cloned by CI today.

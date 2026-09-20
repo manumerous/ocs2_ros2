@@ -1,0 +1,3 @@
+# Marks this directory as a Bazel package so pinocchio-generated-headers.patch
+# can be referenced by label (//patches:pinocchio-generated-headers.patch)
+# from MODULE.bazel's @pinocchio http_archive.

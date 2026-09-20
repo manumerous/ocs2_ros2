@@ -1,0 +1,125 @@
+"""BUILD overlay for @pinocchio (http_archive, real upstream v4.0.0).
+
+Pinocchio has no Bazel/registry module of its own (RCR's `pinocchio`
+module registers only ament-package bookkeeping; see MODULE.bazel for the
+history). This overlay covers exactly the surface OCS2 actually uses
+(confirmed by grepping ocs2_pinocchio_interface/ocs2_centroidal_model/
+ocs2_legged_robot(_ros) for their real `#include <pinocchio/...>` set) plus
+whatever those headers themselves pull in transitively:
+  - core kinematics/multibody/spatial/math/container/serialization (header-only)
+  - the CppAD/CppADCodeGen autodiff scalar headers (header-only; pinocchio
+    itself never links CppAD/CppADCodeGen -- "user should link by himself",
+    per pinocchio's own CMakeLists.txt comment)
+  - the URDF parser (`pinocchio::urdf::buildModel`), which does need
+    compiled .cpp sources
+
+Deliberately NOT built (per the plan approved for this scope expansion):
+CasADi headers, the collision/broadphase layer (needs coal/hpp-fcl, which
+we don't have and don't need -- OCS2 never calls `buildGeom`), the MJCF/
+SDF/graph parsers, Python bindings, the `extra/` and `visualizers/`
+modules, the OpenMP-parallelized batch algorithms, and the deprecated
+header aliases. `ENABLE_TEMPLATE_INSTANTIATION` (a pure compile-time
+optimization upstream, default ON) is left off entirely: OCS2 needs the
+CppAD-scalar-templated code path anyway, not just the precompiled
+`double` instantiations that option would provide, so this is a pure
+header-only-plus-urdf-parser build.
+"""
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "pinocchio",
+    srcs = [
+        "src/parsers/urdf/model.cpp",
+        "src/parsers/urdf/utils.cpp",
+        "src/parsers/utils/file-explorer.cpp",
+    ],
+    hdrs = glob(
+        [
+            "include/pinocchio/**/*.hpp",
+            "include/pinocchio/**/*.hxx",
+        ],
+        exclude = [
+            # Python bindings.
+            "include/pinocchio/bindings/**",
+            # CasADi autodiff backend -- not used by OCS2 (CppAD/CppADCodeGen only).
+            "include/pinocchio/autodiff/casadi*.hpp",
+            "include/pinocchio/src/autodiff/casadi/**",
+            # Collision / broadphase layer -- needs coal/hpp-fcl, which OCS2
+            # never uses (only pinocchio::urdf::buildModel, never buildGeom).
+            "include/pinocchio/collision/**",
+            "include/pinocchio/src/collision/**",
+            # OpenMP-parallelized batch algorithm variants -- unused by OCS2.
+            "include/pinocchio/algorithm/parallel/**",
+            "include/pinocchio/src/algorithm/parallel/**",
+            # MJCF/SDF/graph-model/Python parsers -- OCS2 only uses URDF.
+            "include/pinocchio/parsers/mjcf.hpp",
+            "include/pinocchio/parsers/sdf.hpp",
+            "include/pinocchio/parsers/python.hpp",
+            "include/pinocchio/parsers/graph.hpp",
+            "include/pinocchio/src/parsers/mjcf/**",
+            "include/pinocchio/src/parsers/sdf/**",
+            "include/pinocchio/src/parsers/python/**",
+            "include/pinocchio/src/parsers/graph/**",
+            # Optional "extra" algorithms (reachable workspace) and the
+            # base visualizer -- unused by OCS2.
+            "include/pinocchio/extra/**",
+            "include/pinocchio/src/extra/**",
+            "include/pinocchio/visualizers/**",
+            "include/pinocchio/src/visualizers/**",
+            # Deprecated header aliases -- nothing on our path includes these.
+            "include/pinocchio/deprecated/**",
+        ],
+    ),
+    copts = [
+        "-Wno-deprecated-declarations",
+    ],
+    includes = ["include"],
+    local_defines = [
+        "PINOCCHIO_WITH_URDFDOM",
+        "PINOCCHIO_WITH_CPPAD_SUPPORT",
+        "PINOCCHIO_WITH_CPPADCG_SUPPORT",
+        # pinocchio's JointCollectionDefaultTpl is a boost::variant of 25
+        # joint model types -- boost.mpl's *preprocessed* list headers
+        # (what boost::variant's implementation uses internally) only go
+        # up to 20 template arguments by default
+        # (BOOST_MPL_LIMIT_LIST_SIZE), so `mpl::list<T...>` with 25 types
+        # fails with "wrong number of template arguments (25, should be
+        # at least 0)". BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS switches
+        # mpl::list away from that single fixed-20-arg pregenerated
+        # header to its macro-generated (boost/mpl/aux_/sequence_wrapper.hpp)
+        # form instead -- but that form is *itself* still bounded by
+        # BOOST_MPL_LIMIT_LIST_SIZE (also defaulting to 20), so both
+        # defines are needed together to actually get a >20-arg
+        # mpl::list. This isn't specific to our overlay -- it's inherent
+        # to compiling this boost.variant instantiation with any modern
+        # boost.mpl at all; the real CMake build must set these too.
+        "BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS",
+        "BOOST_MPL_LIMIT_LIST_SIZE=30",
+    ],
+    deps = [
+        "@boost.asio",
+        "@boost.bind",
+        "@boost.container",
+        "@boost.filesystem",
+        "@boost.foreach",
+        "@boost.fusion",
+        "@boost.iostreams",
+        "@boost.logic",
+        "@boost.math",
+        "@boost.mpl",
+        "@boost.optional",
+        "@boost.preprocessor",
+        "@boost.property_tree",
+        "@boost.serialization",
+        "@boost.type_traits",
+        "@boost.variant",
+        "@cppad",
+        "@cppadcodegen",
+        "@eigen",
+        "@urdfdom//:urdfdom_library",
+        "@urdfdom_headers//:urdfdom_headers_library",
+    ],
+)

@@ -1,0 +1,2 @@
+# Marks this directory as a Bazel package so BUILD.pinocchio.bazel (the
+# actual http_archive overlay) can be referenced by label from MODULE.bazel.
