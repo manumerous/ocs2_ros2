@@ -2022,7 +2022,7 @@
     "@@rosdistro+//python:defs.bzl%pip_ros": {
       "general": {
         "bzlTransitiveDigest": "S87pkH1PJxDOylWi8bN9acb5ox77n/tiQKMZfH7c9vk=",
-        "usagesDigest": "Qk8aIj/MuSBfT2O2BO+v1jTKPX6F2uXx2qbZc+leB1U=",
+        "usagesDigest": "lj29ui1m8+5Ke8UA6VwtEVldcDXKHrh2PQiOFO4sEK4=",
         "recordedInputs": [
           "REPO_MAPPING:aspect_rules_py+,bazel_lib bazel_lib+",
           "REPO_MAPPING:aspect_rules_py+,bazel_skylib bazel_skylib+",

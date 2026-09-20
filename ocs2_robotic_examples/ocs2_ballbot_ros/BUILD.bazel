@@ -1,41 +1,52 @@
-load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("//bazel:ocs2_cxx_flags.bzl", "OCS2_LINKOPTS", "OCS2_ROS2_COPTS")
 
 package(default_visibility = ["//visibility:public"])
 
-# PARTIAL MIGRATION -- see the phase 5 progress report for full detail.
+# PARTIAL MIGRATION -- see the phase 5 progress reports for full detail.
 #
-# Blocked (not migrated, kept on the old CMake build untouched -- wait,
-# no: CMakeLists.txt/package.xml ARE still deleted per every other
-# in-scope package, since this package as a whole is in scope; only the
-# *targets* below are skipped):
-#   - The "ocs2_ballbot_ros" library itself, `ballbot_dummy_test`, and
-#     `ballbot_mpc_mrt` all require BallbotDummyVisualization.cpp, which
-#     `#include <kdl_parser/kdl_parser.hpp>`. RCR's `kdl_parser` module
-#     (like `pinocchio`) resolves to an ament-bookkeeping stub with no
-#     real cc_library, and unlike pinocchio, kdl_parser's real dependency
-#     (`orocos_kdl`/KDL) has no RCR *or* BCR module at all to fall back
-#     on -- it would need its own hand-written http_archive overlay from
-#     scratch, same as blasfeo/hpipm were, which wasn't attempted given
-#     the pinocchio blocker already found elsewhere in this same phase.
+# Still skipped, as genuine pre-existing dead code (not migration
+# casualties -- matches the repo-wide finding that no CI ever builds this
+# ROS2 tree):
 #   - `ballbot_sqp` (BallbotSqpMpcNode.cpp) still `#include`s
 #     `<ros/init.h>`/`<ros/package.h>`/`<ocs2_ros_interfaces/...>` --
-#     genuine ROS1-era dead code (matching the repo-wide finding that no
-#     CI ever builds this ROS2 tree) referencing the out-of-scope legacy
+#     genuine ROS1-era code referencing the out-of-scope legacy
 #     `ocs2_ros_interfaces` package, not a mechanical build-system port.
 #   - `ballbot_integration_test` (test/ballbotIntegrationTest.cpp) is the
-#     same kind of ROS1-era dead code (`#include <ros/package.h>`,
-#     `<ocs2_ros_interfaces/...>`); its own CMakeLists.txt registration is
-#     also missing the `find_package(ament_cmake_gtest)` its own
+#     same kind of ROS1-era dead code; its own CMakeLists.txt registration
+#     is also missing the `find_package(ament_cmake_gtest)` its own
 #     `ament_add_gtest()` call needs, so it was never a real active
 #     target either.
 #
-# Migrated: `ballbot_ddp`, `ballbot_target`, and `ballbot_slp` --
-# BallbotSlpMpcNode.cpp had its own real, fixable bug (copy-pasted from
-# BallbotSqpMpcNode.cpp, still instantiating `ocs2::MultipleShootingMpc`
-# via a nonexistent `ocs2_sqp/MultipleShootingMpc.h` and
-# `ballbotInterface.sqpSettings()`); fixed to use the real, existing
-# `ocs2::SlpMpc`/`ballbotInterface.slpSettings()` it evidently meant to.
+# Now migrated too, after the orocos_kdl/kdl_parser scope expansion
+# unblocked them: the "ocs2_ballbot_ros" library itself
+# (BallbotDummyVisualization.cpp, which needs
+# `#include <kdl_parser/kdl_parser.hpp>`), `ballbot_dummy_test`, and
+# `ballbot_mpc_mrt`.
+_DEPS = [
+    "//ocs2_core",
+    "//ocs2_ddp",
+    "//ocs2_mpc",
+    "//ocs2_robotic_examples/ocs2_ballbot",
+    "//ocs2_robotic_tools",
+    "//ocs2_ros2_interfaces",
+    "//ocs2_ros2_msgs:cc",
+    "@ament_index_cpp//:ament_index_cpp_library",
+    "@kdl_parser",
+    "@rclcpp//:rclcpp_library",
+    "@sensor_msgs//:cc",
+    "@visualization_msgs//:cc",
+]
+
+cc_library(
+    name = "ocs2_ballbot_ros",
+    srcs = ["src/BallbotDummyVisualization.cpp"],
+    hdrs = glob(["include/**/*.h"]),
+    copts = OCS2_ROS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = _DEPS,
+)
 
 cc_binary(
     name = "ballbot_ddp",
@@ -75,4 +86,36 @@ cc_binary(
         "//ocs2_ros2_interfaces",
         "@rclcpp//:rclcpp_library",
     ],
+)
+
+    # Matches the original CMakeLists.txt exactly: ballbot_dummy_test and
+    # ballbot_mpc_mrt each compile BallbotDummyVisualization.cpp directly
+    # into the binary (`add_executable(ballbot_dummy_test
+    # src/DummyBallbotNode.cpp src/BallbotDummyVisualization.cpp)`) rather
+    # than linking against the "ocs2_ballbot_ros" library -- so those two
+    # binaries do the same here, plus glob(["include/**/*.h"]) since
+    # they're compiling BallbotDummyVisualization.h's implementation
+    # directly rather than picking it up via the library target's hdrs.
+cc_binary(
+    name = "ballbot_dummy_test",
+    srcs = [
+        "src/BallbotDummyVisualization.cpp",
+        "src/DummyBallbotNode.cpp",
+    ] + glob(["include/**/*.h"]),
+    copts = OCS2_ROS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = _DEPS,
+)
+
+cc_binary(
+    name = "ballbot_mpc_mrt",
+    srcs = [
+        "src/BallbotDummyVisualization.cpp",
+        "src/BallbotMpcMrtNode.cpp",
+    ] + glob(["include/**/*.h"]),
+    copts = OCS2_ROS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = _DEPS,
 )
