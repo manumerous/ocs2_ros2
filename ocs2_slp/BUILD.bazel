@@ -1,0 +1,53 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+load("//bazel:ocs2_cxx_flags.bzl", "OCS2_COPTS", "OCS2_LINKOPTS", "OCS2_TEST_COPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "ocs2_slp",
+    srcs = [
+        "src/Helpers.cpp",
+        "src/SlpSettings.cpp",
+        "src/SlpSolver.cpp",
+        "src/pipg/PipgSettings.cpp",
+        "src/pipg/PipgSolver.cpp",
+        "src/pipg/SingleThreadPipg.cpp",
+    ],
+    hdrs = glob(["include/**/*.h"]),
+    copts = OCS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = [
+        "//ocs2_core",
+        "//ocs2_mpc",
+        "//ocs2_oc",
+        "//ocs2_test_tools/ocs2_qp_solver",
+        "@boost.filesystem",
+        "@boost.system",
+    ],
+)
+
+cc_binary(
+    name = "ocs2_slp_lintTarget",
+    srcs = ["src/lintTarget.cpp"],
+    copts = OCS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = [":ocs2_slp"],
+)
+
+cc_test(
+    name = "test_ocs2_slp",
+    srcs = [
+        "test/testHelpers.cpp",
+        "test/testPipgSolver.cpp",
+        "test/testSlpSolver.cpp",
+    ],
+    copts = OCS2_TEST_COPTS,
+    deps = [
+        ":ocs2_slp",
+        "//ocs2_core",
+        "//ocs2_oc:test_tools",
+        "@googletest//:gtest_main",
+    ],
+)

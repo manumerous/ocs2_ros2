@@ -29,6 +29,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gtest/gtest.h>
 
+#include <iomanip>
+
 #include <ocs2_core/thread_support/ThreadPool.h>
 
 #include "ocs2_oc/oc_problem/OcpToKkt.h"

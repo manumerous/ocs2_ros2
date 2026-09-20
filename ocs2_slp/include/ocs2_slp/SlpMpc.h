@@ -58,11 +58,11 @@ class SlpMpc final : public MPC_BASE {
   const SlpSolver* getSolverPtr() const override { return solverPtr_.get(); }
 
  protected:
-  void calculateController(scalar_t initTime, const vector_t& initState, scalar_t finalTime) override {
+  void calculateController(scalar_t initTime, const vector_t& initState, size_t initMode, scalar_t finalTime) override {
     if (settings().coldStart_) {
       solverPtr_->reset();
     }
-    solverPtr_->run(initTime, initState, finalTime);
+    solverPtr_->run(initTime, initState, initMode, finalTime);
   }
 
  private:

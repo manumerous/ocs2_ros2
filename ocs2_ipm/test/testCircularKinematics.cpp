@@ -104,7 +104,7 @@ TEST(test_circular_kinematics, solve_projected_EqConstraints) {
 
   // Solve
   IpmSolver solver(settings, problem, zeroInitializer);
-  solver.run(startTime, initState, finalTime);
+  solver.run(startTime, initState, 0, finalTime);
 
   const auto primalSolution = solver.primalSolution(finalTime);
 
@@ -194,7 +194,7 @@ TEST(test_circular_kinematics, solve_projected_EqConstraints_IneqConstraints) {
 
   // Solve
   IpmSolver solver(settings, problem, zeroInitializer);
-  solver.run(startTime, initState, finalTime);
+  solver.run(startTime, initState, 0, finalTime);
 
   const auto primalSolution = solver.primalSolution(finalTime);
 
@@ -242,7 +242,7 @@ TEST(test_circular_kinematics, solve_projected_EqConstraints_IneqConstraints) {
   // solve with shifted horizon
   const scalar_array_t shiftTime = {0.05, 0.1, 0.3, 0.5, 0.8, 0.12, 0.16, 0.19};
   for (const auto e : shiftTime) {
-    solver.run(startTime + e, initState, finalTime + e);
+    solver.run(startTime + e, initState, 0, finalTime + e);
   }
 }
 
@@ -289,7 +289,7 @@ TEST(test_circular_kinematics, solve_projected_EqConstraints_MixedIneqConstraint
 
   // Solve
   IpmSolver solver(settings, problem, zeroInitializer);
-  solver.run(startTime, initState, finalTime);
+  solver.run(startTime, initState, 0, finalTime);
 
   const auto primalSolution = solver.primalSolution(finalTime);
 
@@ -341,6 +341,6 @@ TEST(test_circular_kinematics, solve_projected_EqConstraints_MixedIneqConstraint
   // solve with shifted horizon
   const scalar_array_t shiftTime = {0.05, 0.1, 0.3, 0.5, 0.8, 0.12, 0.16, 0.19};
   for (const auto e : shiftTime) {
-    solver.run(startTime + e, initState, finalTime + e);
+    solver.run(startTime + e, initState, 0, finalTime + e);
   }
 }

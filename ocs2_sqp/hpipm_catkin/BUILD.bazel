@@ -1,0 +1,35 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:ocs2_cxx_flags.bzl", "OCS2_COPTS", "OCS2_LINKOPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+# DEVIATION FROM THE PLAN: the plan called for removing hpipm_catkin
+# entirely (like blasfeo_catkin) on the assumption it was pure
+# FetchContent-vendoring of upstream hpipm. It isn't -- unlike
+# blasfeo_catkin (which really has no source of its own), hpipm_catkin
+# contains a real, OCS2-authored wrapper library (HpipmInterface[Settings])
+# that ocs2_ipm and ocs2_sqp both `#include <hpipm_catkin/...>` directly.
+# That wrapper is migrated here like any other in-scope package, kept
+# under its existing name/include path so consumers don't change, and
+# depends on @hpipm (the upstream http_archive) instead of the removed
+# blasfeo_catkin/hpipm_catkin FetchContent step.
+cc_library(
+    name = "hpipm_catkin",
+    srcs = [
+        "src/HpipmInterface.cpp",
+        "src/HpipmInterfaceSettings.cpp",
+    ],
+    hdrs = glob(["include/**/*.h"]),
+    copts = OCS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = [
+        "//ocs2_core",
+        "//ocs2_oc",
+        "@hpipm",
+    ],
+)
+
+# NOTE: hpipm_catkin's own ament_add_gtest call (test/testHpipmInterface.cpp)
+# is commented out in its CMakeLists.txt today -- there is no active test
+# target to mirror here.

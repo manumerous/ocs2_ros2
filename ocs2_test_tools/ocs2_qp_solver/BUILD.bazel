@@ -1,0 +1,43 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("//bazel:ocs2_cxx_flags.bzl", "OCS2_COPTS", "OCS2_LINKOPTS", "OCS2_TEST_COPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "ocs2_qp_solver",
+    srcs = [
+        "src/Ocs2QpSolver.cpp",
+        "src/QpDiscreteTranscription.cpp",
+        "src/QpSolver.cpp",
+        "src/QpTrajectories.cpp",
+    ],
+    hdrs = glob(["include/**/*.h"]),
+    copts = OCS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = ["//ocs2_core", "//ocs2_oc"],
+)
+
+cc_library(
+    name = "test_tools",
+    testonly = True,
+    hdrs = ["test/include/ocs2_qp_solver/test/testProblemsGeneration.h"],
+    includes = ["test/include"],
+    deps = [":ocs2_qp_solver", "//ocs2_core", "//ocs2_oc:test_tools"],
+)
+
+cc_test(
+    name = "test_ocs2_qp_solver",
+    srcs = [
+        "test/testDiscreteTranscription.cpp",
+        "test/testOcs2QpSolver.cpp",
+        "test/testQpSolver.cpp",
+    ],
+    copts = OCS2_TEST_COPTS,
+    deps = [
+        ":ocs2_qp_solver",
+        ":test_tools",
+        "//ocs2_core:test_tools",
+        "@googletest//:gtest_main",
+    ],
+)

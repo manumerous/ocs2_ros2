@@ -1,0 +1,46 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("//bazel:ocs2_cxx_flags.bzl", "OCS2_COPTS", "OCS2_LINKOPTS", "OCS2_TEST_COPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "ocs2_ipm",
+    srcs = [
+        "src/IpmHelpers.cpp",
+        "src/IpmInitialization.cpp",
+        "src/IpmPerformanceIndexComputation.cpp",
+        "src/IpmSettings.cpp",
+        "src/IpmSolver.cpp",
+    ],
+    hdrs = glob(["include/**/*.h"]),
+    copts = OCS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = [
+        "//ocs2_core",
+        "//ocs2_mpc",
+        "//ocs2_oc",
+        "//ocs2_sqp/hpipm_catkin",
+        "@boost.filesystem",
+        "@boost.system",
+    ],
+)
+
+cc_test(
+    name = "test_ocs2_ipm",
+    srcs = [
+        "test/Exp0Test.cpp",
+        "test/Exp1Test.cpp",
+        "test/testCircularKinematics.cpp",
+        "test/testSwitchedProblem.cpp",
+        "test/testUnconstrained.cpp",
+        "test/testValuefunction.cpp",
+    ],
+    copts = OCS2_TEST_COPTS,
+    deps = [
+        ":ocs2_ipm",
+        "//ocs2_core",
+        "//ocs2_oc:test_tools",
+        "@googletest//:gtest_main",
+    ],
+)

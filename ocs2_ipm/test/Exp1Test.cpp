@@ -110,7 +110,7 @@ TEST(Exp1Test, Unconstrained) {
   // Solve
   IpmSolver solver(settings, problem, zeroInitializer);
   solver.setReferenceManager(referenceManagerPtr);
-  solver.run(startTime, initState, finalTime);
+  solver.run(startTime, initState, 0, finalTime);
 }
 
 TEST(Exp1Test, Constrained) {
@@ -180,7 +180,7 @@ TEST(Exp1Test, Constrained) {
   // Solve
   IpmSolver solver(settings, problem, zeroInitializer);
   solver.setReferenceManager(referenceManagerPtr);
-  solver.run(startTime, initState, finalTime);
+  solver.run(startTime, initState, 0, finalTime);
 
   const auto primalSolution = solver.primalSolution(finalTime);
 
@@ -201,7 +201,7 @@ TEST(Exp1Test, Constrained) {
   // solve with shifted horizon
   const scalar_array_t shiftTime = {0.05, 0.1, 0.3, 0.5, 0.8, 0.12, 0.16, 0.19};
   for (const auto e : shiftTime) {
-    solver.run(startTime + e, initState, finalTime + e);
+    solver.run(startTime + e, initState, 0, finalTime + e);
   }
 }
 
@@ -250,7 +250,7 @@ TEST(Exp1Test, MixedConstrained) {
   // Solve
   IpmSolver solver(settings, problem, zeroInitializer);
   solver.setReferenceManager(referenceManagerPtr);
-  solver.run(startTime, initState, finalTime);
+  solver.run(startTime, initState, 0, finalTime);
 
   const auto primalSolution = solver.primalSolution(finalTime);
 
@@ -267,6 +267,6 @@ TEST(Exp1Test, MixedConstrained) {
   // solve with shifted horizon
   const scalar_array_t shiftTime = {0.05, 0.1, 0.3, 0.5, 0.8, 0.12, 0.16, 0.19};
   for (const auto e : shiftTime) {
-    solver.run(startTime + e, initState, finalTime + e);
+    solver.run(startTime + e, initState, 0, finalTime + e);
   }
 }

@@ -1,0 +1,2 @@
+# Marks this directory as a Bazel package so ocs2_cxx_flags.bzl can be
+# loaded by label from other packages' BUILD.bazel files.

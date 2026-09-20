@@ -1,0 +1,21 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:ocs2_cxx_flags.bzl", "OCS2_COPTS", "OCS2_LINKOPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "ocs2_mpc",
+    srcs = [
+        "src/LoopshapingSystemObservation.cpp",
+        "src/MPC_BASE.cpp",
+        "src/MPC_MRT_Interface.cpp",
+        "src/MPC_Settings.cpp",
+        "src/MRT_BASE.cpp",
+        "src/SystemObservation.cpp",
+    ],
+    hdrs = glob(["include/**/*.h"]),
+    copts = OCS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = ["//ocs2_core", "//ocs2_oc"],
+)

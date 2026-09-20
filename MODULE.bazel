@@ -45,6 +45,17 @@ bazel_dep(name = "boost.system", version = "1.90.0.bcr.1")
 bazel_dep(name = "boost.filesystem", version = "1.90.0.bcr.1")
 bazel_dep(name = "boost.log", version = "1.90.0.bcr.1")
 
+# Header-only Boost libraries used directly by ocs2_core and friends
+# (#include <boost/algorithm/...>, <boost/property_tree/...>, etc.) --
+# declared explicitly rather than relying on picking them up transitively
+# through boost.log's own dependency graph.
+bazel_dep(name = "boost.algorithm", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.core", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.numeric_odeint", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.property_tree", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.smart_ptr", version = "1.90.0.bcr.1")
+bazel_dep(name = "boost.tokenizer", version = "1.90.0.bcr.1")
+
 bazel_dep(name = "googletest", version = "1.17.0.bcr.2", dev_dependency = True)
 
 # ---------------------------------------------------------------------------
@@ -151,6 +162,40 @@ _CPPAD_CONFIGURE_HPP = """\
 # endif
 """
 
+# CppAD also ships include/cppad/local/is_pod.hpp.in, substituted the same
+# way (and, per a diff against the committed ocs2_thirdparty vendored copy,
+# with a fixed expansion that doesn't depend on any build option -- just a
+# static list of C++ fundamental types).
+_CPPAD_IS_POD_HPP = """\
+# ifndef CPPAD_LOCAL_IS_POD_HPP
+# define CPPAD_LOCAL_IS_POD_HPP
+# include <cstddef>
+namespace CppAD { namespace local {
+template <class T> bool is_pod(void) { return false; }
+    template <> inline bool is_pod<bool>(void) { return true; }
+    template <> inline bool is_pod<char>(void) { return true; }
+    template <> inline bool is_pod<wchar_t>(void) { return true; }
+    template <> inline bool is_pod<float>(void) { return true; }
+    template <> inline bool is_pod<double>(void) { return true; }
+    template <> inline bool is_pod<long double>(void) { return true; }
+    template <> inline bool is_pod<signed char>(void) { return true; }
+    template <> inline bool is_pod<unsigned char>(void) { return true; }
+    template <> inline bool is_pod<signed short>(void) { return true; }
+    template <> inline bool is_pod<unsigned short>(void) { return true; }
+    template <> inline bool is_pod<signed int>(void) { return true; }
+    template <> inline bool is_pod<unsigned int>(void) { return true; }
+    template <> inline bool is_pod<signed long>(void) { return true; }
+    template <> inline bool is_pod<unsigned long>(void) { return true; }
+# if CPPAD_USE_CPLUSPLUS_2011
+    template <> inline bool is_pod<char16_t>(void) { return true; }
+    template <> inline bool is_pod<char32_t>(void) { return true; }
+    template <> inline bool is_pod<signed long long>(void) { return true; }
+    template <> inline bool is_pod<unsigned long long>(void) { return true; }
+# endif
+} }
+# endif
+"""
+
 # CppAD -- vendored today under ocs2_thirdparty/include/cppad.
 http_archive(
     name = "cppad",
@@ -158,6 +203,8 @@ http_archive(
     patch_cmds = [
         "cat > include/cppad/configure.hpp << 'CPPAD_CONFIGURE_HPP_EOF'\n" +
         _CPPAD_CONFIGURE_HPP + "CPPAD_CONFIGURE_HPP_EOF",
+        "cat > include/cppad/local/is_pod.hpp << 'CPPAD_IS_POD_HPP_EOF'\n" +
+        _CPPAD_IS_POD_HPP + "CPPAD_IS_POD_HPP_EOF",
     ],
     sha256 = "3b89e2a88c4fc7e263c67787e4dde2d3be5a786f389d9c608d21a1acffcee16a",
     strip_prefix = "CppAD-20190200.5",

@@ -98,7 +98,7 @@ std::pair<PrimalSolution, std::vector<PerformanceIndex>> solve(const VectorFunct
   solver.setReferenceManager(referenceManagerPtr);
 
   // Solve
-  solver.run(startTime, initState, finalTime);
+  solver.run(startTime, initState, 0, finalTime);
   return {solver.primalSolution(finalTime), solver.getIterationsLog()};
 }
 

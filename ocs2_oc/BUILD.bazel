@@ -1,0 +1,123 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+load("//bazel:ocs2_cxx_flags.bzl", "OCS2_COPTS", "OCS2_LINKOPTS", "OCS2_TEST_COPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "ocs2_oc",
+    srcs = [
+        "src/approximate_model/ChangeOfInputVariables.cpp",
+        "src/approximate_model/LinearQuadraticApproximator.cpp",
+        "src/multiple_shooting/Helpers.cpp",
+        "src/multiple_shooting/Initialization.cpp",
+        "src/multiple_shooting/LagrangianEvaluation.cpp",
+        "src/multiple_shooting/MetricsComputation.cpp",
+        "src/multiple_shooting/PerformanceIndexComputation.cpp",
+        "src/multiple_shooting/ProjectionMultiplierCoefficients.cpp",
+        "src/multiple_shooting/Transcription.cpp",
+        "src/oc_data/LoopshapingPrimalSolution.cpp",
+        "src/oc_data/PerformanceIndex.cpp",
+        "src/oc_data/TimeDiscretization.cpp",
+        "src/oc_problem/OptimalControlProblem.cpp",
+        "src/oc_problem/LoopshapingOptimalControlProblem.cpp",
+        "src/oc_problem/OptimalControlProblemHelperFunction.cpp",
+        "src/oc_problem/OcpSize.cpp",
+        "src/oc_problem/OcpToKkt.cpp",
+        "src/oc_solver/SolverBase.cpp",
+        "src/precondition/Ruzi.cpp",
+        "src/rollout/PerformanceIndicesRollout.cpp",
+        "src/rollout/RolloutBase.cpp",
+        "src/rollout/RootFinder.cpp",
+        "src/rollout/InitializerRollout.cpp",
+        "src/rollout/StateTriggeredRollout.cpp",
+        "src/rollout/TimeTriggeredRollout.cpp",
+        "src/rollout/RolloutSettings.cpp",
+        "src/synchronized_module/ReferenceManager.cpp",
+        "src/synchronized_module/LoopshapingReferenceManager.cpp",
+        "src/synchronized_module/LoopshapingSynchronizedModule.cpp",
+        "src/synchronized_module/SolverObserver.cpp",
+        "src/search_strategy/FilterLinesearch.cpp",
+        "src/trajectory_adjustment/TrajectorySpreading.cpp",
+    ],
+    hdrs = glob(["include/**/*.h"]),
+    copts = OCS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = ["//ocs2_core", "@boost.property_tree"],
+)
+
+cc_binary(
+    name = "ocs2_oc_lintTarget",
+    srcs = ["src/lintTarget.cpp"],
+    copts = OCS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = [":ocs2_oc", "//ocs2_core"],
+)
+
+# Exported test-support headers, matching
+# `install(DIRECTORY test/include/ DESTINATION include)` -- used by
+# ocs2_ddp/ocs2_ipm/ocs2_slp/ocs2_sqp's own tests downstream.
+cc_library(
+    name = "test_tools",
+    testonly = True,
+    hdrs = glob(["test/include/**/*.h"]),
+    includes = ["test/include"],
+    deps = [":ocs2_oc", "//ocs2_core"],
+)
+
+cc_test(
+    name = "test_ocs2_oc_multiple_shooting",
+    srcs = [
+        "test/multiple_shooting/testProjectionMultiplierCoefficients.cpp",
+        "test/multiple_shooting/testTranscriptionMetrics.cpp",
+        "test/multiple_shooting/testTranscriptionPerformanceIndex.cpp",
+    ],
+    copts = OCS2_TEST_COPTS,
+    deps = [":ocs2_oc", ":test_tools", "//ocs2_core", "@googletest//:gtest_main"],
+)
+
+cc_test(
+    name = "test_ocs2_oc_data",
+    srcs = ["test/oc_data/testTimeDiscretization.cpp"],
+    copts = OCS2_TEST_COPTS,
+    deps = [":ocs2_oc", ":test_tools", "//ocs2_core", "@googletest//:gtest_main"],
+)
+
+cc_test(
+    name = "test_ocs2_oc_rollout",
+    srcs = [
+        "test/rollout/testStateTriggeredRollout.cpp",
+        "test/rollout/testTimeTriggeredRollout.cpp",
+    ],
+    copts = OCS2_TEST_COPTS,
+    deps = [":ocs2_oc", ":test_tools", "//ocs2_core", "@googletest//:gtest_main"],
+)
+
+cc_test(
+    name = "test_change_of_variables",
+    srcs = ["test/testChangeOfInputVariables.cpp"],
+    copts = OCS2_TEST_COPTS,
+    deps = [":ocs2_oc", ":test_tools", "//ocs2_core", "@googletest//:gtest_main"],
+)
+
+cc_test(
+    name = "test_trajectory_spreading",
+    srcs = ["test/trajectory_adjustment/TrajectorySpreadingTest.cpp"],
+    copts = OCS2_TEST_COPTS,
+    deps = [":ocs2_oc", ":test_tools", "//ocs2_core", "@googletest//:gtest_main"],
+)
+
+cc_test(
+    name = "test_ocp_to_kkt",
+    srcs = ["test/oc_problem/testOcpToKkt.cpp"],
+    copts = OCS2_TEST_COPTS,
+    deps = [":ocs2_oc", ":test_tools", "//ocs2_core", "@googletest//:gtest_main"],
+)
+
+cc_test(
+    name = "test_precondition",
+    srcs = ["test/precondition/testPrecondition.cpp"],
+    copts = OCS2_TEST_COPTS,
+    deps = [":ocs2_oc", ":test_tools", "//ocs2_core", "@googletest//:gtest_main"],
+)

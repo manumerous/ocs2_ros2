@@ -8,8 +8,26 @@ common --registry=https://bcr.bazel.build
 # Test hermeticity, per RCR's own guidance for ROS2 interface/codegen tests.
 test --sandbox_default_allow_network=false
 
+# Disable Bazel's automatic intermediate .so generation for cc_library deps
+# shared by multiple binaries/tests ("dynamic_mode=default"). With it on,
+# Bazel builds e.g. ocs2_core as its own standalone .so, which must resolve
+# all of its symbols (including Boost.Log's) at *that* .so's link time --
+# and that broke with real "undefined reference to boost::log::..." errors
+# once the dependency graph got deep enough (ocs2_core -> boost.log).
+# Fully static internal linking matches what the original CMake build
+# actually produced anyway.
+build --dynamic_mode=off
+
 # The existing CMake build pins C++14 (see ocs2_core/cmake/ocs2_cxx_flags.cmake).
-# Preserve that as the project-wide default rather than silently bumping the
-# language standard as a side effect of this migration.
-build --cxxopt=-std=c++14
-build --host_cxxopt=-std=c++14
+# Preserve that for OCS2's own targets -- but deliberately NOT as a global
+# --cxxopt here, since that would also force every external dependency
+# (including googletest, which the RCR/BCR-resolved graph only offers as
+# >=1.17.0.bcr.2 and which hard #errors below C++17: "C++ versions less
+# than C++17 are not supported.") down to C++14 too. Instead, "-std=c++14"
+# is added directly to OCS2_COPTS (bazel/ocs2_cxx_flags.bzl) on OCS2's own
+# cc_library/cc_binary targets only, and "-std=c++17" to OCS2_TEST_COPTS
+# for cc_test targets that pull in gtest. Everything else (external deps)
+# is left on the toolchain's own ambient default, which happens to already
+# be gnu++17 on the GCC 13 this was verified against -- if building on a
+# GCC/Clang whose *default* is older than C++17, googletest would need an
+# explicit --cxxopt=-std=c++17 added back here.

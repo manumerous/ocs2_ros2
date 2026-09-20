@@ -1,0 +1,36 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+load("//bazel:ocs2_cxx_flags.bzl", "OCS2_COPTS", "OCS2_LINKOPTS", "OCS2_TEST_COPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "ocs2_robotic_tools",
+    srcs = [
+        "src/common/LoopshapingRobotInterface.cpp",
+        "src/common/RotationTransforms.cpp",
+    ],
+    hdrs = glob(["include/**/*.h"]),
+    copts = OCS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = ["//ocs2_core", "//ocs2_oc", "@eigen"],
+)
+
+cc_binary(
+    name = "ocs2_robotic_tools_lintTarget",
+    srcs = ["src/lintTarget.cpp"],
+    copts = OCS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = [":ocs2_robotic_tools", "//ocs2_core", "//ocs2_oc"],
+)
+
+cc_test(
+    name = "rotation_transform_tests",
+    srcs = [
+        "test/common/TestRotationDerivativesTransforms.cpp",
+        "test/common/TestRotationTransforms.cpp",
+    ],
+    copts = OCS2_TEST_COPTS,
+    deps = [":ocs2_robotic_tools", "@googletest//:gtest_main"],
+)

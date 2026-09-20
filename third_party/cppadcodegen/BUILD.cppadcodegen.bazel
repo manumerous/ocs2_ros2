@@ -9,9 +9,88 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
+# CppADCodeGen's own CMake build wraps the raw pthread_pool.c/.h sources
+# (a vendored C thread pool, adapted from
+# https://github.com/Pithikos/C-Thread-Pool) into two generated headers
+# that embed their content as raw string literals plus a size constant --
+# needed because CppADCodeGen writes these files out again next to
+# JIT-compiled generated model source so a standalone dynamic library
+# build doesn't need CppADCodeGen's own install tree. Reproduced here with
+# genrules over the two real source files instead of a CMake
+# configure_file step.
+genrule(
+    name = "gen_pthread_pool_c_hpp",
+    srcs = ["include/cppad/cg/model/threadpool/pthread_pool.c"],
+    outs = ["include/cppad/cg/model/threadpool/pthread_pool_c.hpp"],
+    cmd = """
+        size=$$(wc -c < $(SRCS))
+        { \
+          echo 'const char CPPADCG_PTHREAD_POOL_C_FILE[] = R"*=*('; \
+          cat $(SRCS); \
+          echo ')*=*";'; \
+          echo; \
+          echo "const size_t CPPADCG_PTHREAD_POOL_C_FILE_SIZE = $$size;"; \
+        } > $@
+    """,
+)
+
+genrule(
+    name = "gen_pthread_pool_h_hpp",
+    srcs = ["include/cppad/cg/model/threadpool/pthread_pool.h"],
+    outs = ["include/cppad/cg/model/threadpool/pthread_pool_h.hpp"],
+    cmd = """
+        size=$$(wc -c < $(SRCS))
+        { \
+          echo 'const char CPPADCG_PTHREAD_POOL_H_FILE[] = R"*=*('; \
+          cat $(SRCS); \
+          echo ')*=*";'; \
+          echo; \
+          echo "const size_t CPPADCG_PTHREAD_POOL_H_FILE_SIZE = $$size;"; \
+        } > $@
+    """,
+)
+
+genrule(
+    name = "gen_openmp_c_hpp",
+    srcs = ["include/cppad/cg/model/threadpool/openmp.c"],
+    outs = ["include/cppad/cg/model/threadpool/openmp_c.hpp"],
+    cmd = """
+        size=$$(wc -c < $(SRCS))
+        { \
+          echo 'const char CPPADCG_OPENMP_C_FILE[] = R"*=*('; \
+          cat $(SRCS); \
+          echo ')*=*";'; \
+          echo; \
+          echo "const size_t CPPADCG_OPENMP_C_FILE_SIZE = $$size;"; \
+        } > $@
+    """,
+)
+
+genrule(
+    name = "gen_openmp_h_hpp",
+    srcs = ["include/cppad/cg/model/threadpool/openmp.h"],
+    outs = ["include/cppad/cg/model/threadpool/openmp_h.hpp"],
+    cmd = """
+        size=$$(wc -c < $(SRCS))
+        { \
+          echo 'const char CPPADCG_OPENMP_H_FILE[] = R"*=*('; \
+          cat $(SRCS); \
+          echo ')*=*";'; \
+          echo; \
+          echo "const size_t CPPADCG_OPENMP_H_FILE_SIZE = $$size;"; \
+        } > $@
+    """,
+)
+
 cc_library(
     name = "cppadcodegen",
-    hdrs = glob(["include/cppad/cg/**"]),
+    hdrs = glob(["include/cppad/cg/**"]) + [
+        "include/cppad/cg.hpp",
+        ":gen_pthread_pool_c_hpp",
+        ":gen_pthread_pool_h_hpp",
+        ":gen_openmp_c_hpp",
+        ":gen_openmp_h_hpp",
+    ],
     includes = ["include"],
     deps = ["@cppad"],
 )

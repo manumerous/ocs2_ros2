@@ -88,7 +88,7 @@ TEST(test_valuefunction, linear_quadratic_problem) {
   // Get value function
   const ocs2::vector_t zeroState = ocs2::vector_t::Random(n);
   solver.reset();
-  solver.run(startTime, zeroState, finalTime);
+  solver.run(startTime, zeroState, 0, finalTime);
   const auto costToGo = solver.getValueFunction(startTime, zeroState);
   const ocs2::scalar_t zeroCost = solver.getPerformanceIndeces().cost;
 
@@ -96,7 +96,7 @@ TEST(test_valuefunction, linear_quadratic_problem) {
   for (int i = 0; i < Nsample; ++i) {
     const ocs2::vector_t sampleState = ocs2::vector_t::Random(n);
     solver.reset();
-    solver.run(startTime, sampleState, finalTime);
+    solver.run(startTime, sampleState, 0, finalTime);
     const ocs2::scalar_t sampleCost = solver.getPerformanceIndeces().cost;
     const ocs2::vector_t dx = sampleState - zeroState;
 
