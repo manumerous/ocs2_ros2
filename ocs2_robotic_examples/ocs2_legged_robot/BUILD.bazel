@@ -1,0 +1,56 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:ocs2_cxx_flags.bzl", "OCS2_LINKOPTS", "OCS2_ROS2_COPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+# NOTE: the original CMakeLists.txt's own test target
+# (ocs2_legged_robot_test, covering AnymalFactoryFunctions.cpp +
+# test/constraint/test*.cpp) is entirely commented out -- no active
+# target to mirror here.
+cc_library(
+    name = "ocs2_legged_robot",
+    srcs = [
+        "src/LeggedRobotInterface.cpp",
+        "src/LeggedRobotPreComputation.cpp",
+        "src/common/ModelSettings.cpp",
+        "src/constraint/EndEffectorLinearConstraint.cpp",
+        "src/constraint/FrictionConeConstraint.cpp",
+        "src/constraint/NormalVelocityConstraintCppAd.cpp",
+        "src/constraint/ZeroForceConstraint.cpp",
+        "src/constraint/ZeroVelocityConstraintCppAd.cpp",
+        "src/dynamics/LeggedRobotDynamicsAD.cpp",
+        "src/foot_planner/CubicSpline.cpp",
+        "src/foot_planner/SplineCpg.cpp",
+        "src/foot_planner/SwingTrajectoryPlanner.cpp",
+        "src/gait/Gait.cpp",
+        "src/gait/GaitSchedule.cpp",
+        "src/gait/LegLogic.cpp",
+        "src/gait/ModeSequenceTemplate.cpp",
+        "src/initialization/LeggedRobotInitializer.cpp",
+        "src/reference_manager/SwitchedModelReferenceManager.cpp",
+    ],
+    hdrs = glob(["include/**/*.h"]),
+    copts = OCS2_ROS2_COPTS + [
+        "-Wno-ignored-attributes",
+    ],
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS + ["-ldl"],
+    deps = [
+        "//ocs2_core",
+        "//ocs2_ddp",
+        "//ocs2_ipm",
+        "//ocs2_mpc",
+        "//ocs2_oc",
+        "//ocs2_pinocchio/ocs2_centroidal_model",
+        "//ocs2_pinocchio/ocs2_pinocchio_interface",
+        "//ocs2_robotic_tools",
+        "//ocs2_sqp/ocs2_sqp",
+        "@eigen",
+        "@pinocchio",
+    ],
+)
+
+filegroup(
+    name = "config",
+    srcs = glob(["config/**"]),
+)
