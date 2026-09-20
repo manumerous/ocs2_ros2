@@ -1,0 +1,14 @@
+load("@rosidl_default_generators//:defs.bzl", "ros_service")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(glob(["*.srv"]))
+
+ros_service(
+    name = "Reset",
+    src = "Reset.srv",
+    package = "ocs2_ros2_msgs",
+    deps = [
+        "//ocs2_ros2_msgs/msg:MpcTargetTrajectories",
+    ],
+)

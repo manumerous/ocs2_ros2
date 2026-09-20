@@ -1,0 +1,68 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("//bazel:ocs2_cxx_flags.bzl", "OCS2_LINKOPTS", "OCS2_ROS2_COPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+# @rclcpp/@geometry_msgs/@std_msgs/@visualization_msgs are consumed via
+# their plain, statically-linkable cc_library targets (`rclcpp_library`,
+# or the package-aggregate `cc` for message packages -- NOT the raw
+# per-message `_ros_interface_rule` targets like `@geometry_msgs//msg:
+# Vector3`, which are only for cross-referencing between message
+# definitions, not for linking compiled C++ code against). @rclcpp also
+# ships a `cc_shared_library` wrapper (`@rclcpp//:rclcpp`) meant for
+# dynamic linking, but this repo builds everything statically
+# (--dynamic_mode=off), so `rclcpp_library` is used directly instead.
+_DEPS = [
+    "//ocs2_core",
+    "//ocs2_ddp",
+    "//ocs2_mpc",
+    "//ocs2_oc",
+    "//ocs2_ros2_msgs:cc",
+    "@eigen",
+    "@geometry_msgs//:cc",
+    "@interactive_markers//:interactive_markers_library",
+    "@rclcpp//:rclcpp_library",
+    "@std_msgs//:cc",
+    "@visualization_msgs//:cc",
+]
+
+cc_library(
+    name = "ocs2_ros2_interfaces",
+    srcs = [
+        "src/command/TargetTrajectoriesInteractiveMarker.cpp",
+        "src/command/TargetTrajectoriesKeyboardPublisher.cpp",
+        "src/command/TargetTrajectoriesRosPublisher.cpp",
+        "src/common/RosMsgConversions.cpp",
+        "src/common/RosMsgHelpers.cpp",
+        "src/mpc/MPC_ROS_Interface.cpp",
+        "src/mrt/LoopshapingDummyObserver.cpp",
+        "src/mrt/MRT_ROS_Dummy_Loop.cpp",
+        "src/mrt/MRT_ROS_Interface.cpp",
+        "src/synchronized_module/RosReferenceManager.cpp",
+        "src/visualization/VisualizationColors.cpp",
+        "src/visualization/VisualizationHelpers.cpp",
+    ],
+    hdrs = glob(["include/**/*.h"]),
+    copts = OCS2_ROS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = _DEPS,
+)
+
+cc_binary(
+    name = "multiplot_remap",
+    srcs = ["src/multiplot/MultiplotRemap.cpp"],
+    copts = OCS2_ROS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = [":ocs2_ros2_interfaces"] + _DEPS,
+)
+
+cc_binary(
+    name = "ocs2_ros2_interfaces_lintTarget",
+    srcs = ["src/lintTarget.cpp"],
+    copts = OCS2_ROS2_COPTS,
+    includes = ["include"],
+    linkopts = OCS2_LINKOPTS,
+    deps = [":ocs2_ros2_interfaces"] + _DEPS,
+)

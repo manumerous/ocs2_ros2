@@ -95,12 +95,38 @@ bazel_dep(name = "rosidl_adapter", version = "5.2.1-1.rcr.1")
 bazel_dep(name = "rosidl_generator_cpp", version = "5.2.1-1.rcr.1")
 bazel_dep(name = "rosidl_typesupport_cpp", version = "3.4.2-3.rcr.1")
 
+# Needed transitively by the rosidl_core_generators machinery (e.g. its
+# select()s against @rosdistro//... platform/os constraints) once we
+# actually declare our own ros_idl/ros_service targets -- not required
+# merely to *resolve* the module graph in phase 1, only to *build* a
+# ros_interface target, which is why this wasn't caught until phase 4.
+bazel_dep(name = "rosdistro", version = "lyrical.2026-06-08.rcr.1")
+
 # NOTE: RCR's own `pinocchio` module (4.0.0-2.rcr.1) currently registers only
 # an `ament_package` bookkeeping target -- its upstream release-mirror tarball
 # ships zero BUILD.bazel files, so there is no real cc_library here yet. Kept
 # declared (harmless) while the real Pinocchio build is sorted out -- see the
 # phase 3 progress report for details.
 bazel_dep(name = "pinocchio", version = "4.0.0-2.rcr.1")
+
+# Matches the version every RCR module in this graph already bazel_deps on.
+bazel_dep(name = "rules_python", version = "2.2.0")
+
+# Every RCR module's own MODULE.bazel registers a Python 3.12 toolchain
+# (`python.toolchain(is_default = True, python_version = "3.12")`), needed
+# because rosidl's C++ codegen is itself implemented via Python scripts
+# (e.g. depending on a pinned PyYAML wheel via the `pip_ros` hub). As the
+# *root* module, our own choice -- or lack of one -- decides the actually
+# resolved default toolchain, not any non-root module's `is_default = True`;
+# leaving this unset left the default at rules_python's own baseline
+# (3.11), which doesn't match the Python version pip_ros's wheel hub was
+# generated for, and building any ros_interface target failed with "No
+# matching wheel for current configuration's Python version and platform."
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    is_default = True,
+    python_version = "3.12",
+)
 
 # ---------------------------------------------------------------------------
 # http_archive: no registry module exists for these

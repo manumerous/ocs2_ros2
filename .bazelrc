@@ -18,6 +18,15 @@ test --sandbox_default_allow_network=false
 # actually produced anyway.
 build --dynamic_mode=off
 
+# @rosdistro's own `rmw` build setting defaults to "dynamic", which pulls
+# in *every* RMW middleware backend rclcpp can be built against --
+# including rmw_zenoh_cpp, which drags in a Rust toolchain (via zenoh-c's
+# Cargo build script) just to compile a plain C++ node. OCS2 doesn't need
+# runtime RMW switching; pin to the same default a plain ROS2 install
+# uses (rmw_fastrtps_cpp) instead of standing up a whole second
+# language's toolchain for a backend nothing here uses.
+build --@rosdistro//:rmw=rmw_fastrtps_cpp
+
 # The existing CMake build pins C++14 (see ocs2_core/cmake/ocs2_cxx_flags.cmake).
 # Preserve that for OCS2's own targets -- but deliberately NOT as a global
 # --cxxopt here, since that would also force every external dependency

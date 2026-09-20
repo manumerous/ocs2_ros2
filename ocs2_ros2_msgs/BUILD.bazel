@@ -1,0 +1,39 @@
+"""ocs2_ros2_msgs: OCS2's custom ROS2 message/service definitions.
+
+NOTE ON package.xml: unlike every other migrated package, package.xml is
+*kept* here rather than deleted -- RCR's `default_generators` macro takes
+it as a real input (package name/version metadata for the generated code),
+mirroring how every RCR message-package module (std_msgs, common_interfaces,
+...) keeps its own package.xml for exactly this purpose. Only
+CMakeLists.txt (the actual build-system file) is removed.
+"""
+
+load("@rosidl_default_generators//:defs.bzl", "default_generators")
+
+package(default_visibility = ["//visibility:public"])
+
+default_generators(
+    package_xml = "package.xml",
+    deps = [
+        "//ocs2_ros2_msgs/msg:Benchmarks",
+        "//ocs2_ros2_msgs/msg:BezierSegment",
+        "//ocs2_ros2_msgs/msg:BezierTrajectory",
+        "//ocs2_ros2_msgs/msg:Constraint",
+        "//ocs2_ros2_msgs/msg:ControllerData",
+        "//ocs2_ros2_msgs/msg:Gains",
+        "//ocs2_ros2_msgs/msg:IndividualBenchmarks",
+        "//ocs2_ros2_msgs/msg:IndividualGains",
+        "//ocs2_ros2_msgs/msg:LagrangianMetrics",
+        "//ocs2_ros2_msgs/msg:ModeSchedule",
+        "//ocs2_ros2_msgs/msg:MpcFlattenedController",
+        "//ocs2_ros2_msgs/msg:MpcInput",
+        "//ocs2_ros2_msgs/msg:MpcObservation",
+        "//ocs2_ros2_msgs/msg:MpcPerformanceIndices",
+        "//ocs2_ros2_msgs/msg:MpcState",
+        "//ocs2_ros2_msgs/msg:MpcTargetTrajectories",
+        "//ocs2_ros2_msgs/msg:Multiplier",
+        "//ocs2_ros2_msgs/msg:ThreeDofPath",
+        "//ocs2_ros2_msgs/msg:ThreeDofPointTS",
+        "//ocs2_ros2_msgs/srv:Reset",
+    ],
+)

@@ -32,6 +32,17 @@ OCS2_COPTS = [
 
 OCS2_TEST_COPTS = OCS2_COPTS[:-1] + ["-std=c++17"]
 
+# Same C++17 override, for the same reason, but for *production* code
+# rather than tests: packages that bridge into ROS2 itself
+# (ocs2_ros2_interfaces and the *_ros example binaries) transitively
+# include rclcpp/rosidl runtime headers (e.g. rosidl_buffer/buffer.hpp)
+# that use `std::is_same_v` and other C++17-only standard library
+# features -- compiling them at C++14 fails with real
+# "'is_same_v' is not a member of 'std'" errors. The solver/math core
+# (ocs2_core and everything under it) has no such dependency and stays on
+# C++14 via plain OCS2_COPTS; only the ROS2 integration layer needs this.
+OCS2_ROS2_COPTS = OCS2_COPTS[:-1] + ["-std=c++17"]
+
 OCS2_LINKOPTS = [
     "-pthread",
     "-Wl,--no-as-needed",

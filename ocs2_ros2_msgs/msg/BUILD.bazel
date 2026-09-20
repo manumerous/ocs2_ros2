@@ -1,0 +1,175 @@
+"""ocs2_ros2_msgs message definitions.
+
+Per RCR's developer guide, the BUILD.bazel for a custom interface must live
+in the same directory as its .msg/.idl source file. These are raw .idl
+sources (RCR's `ros_idl` wrapper -- verified against @rosidl_default_generators's
+defs.bzl -- accepts them directly: `ros_message`/`ros_idl` are both thin
+wrappers around the same underlying `ros_interface` rule and its `src`
+attribute, just with a different name/default deps; there was no need to
+reformat these to .msg/.srv text as the plan flagged as a possible
+fallback).
+
+Every call passes `package = "ocs2_ros2_msgs"` explicitly: `ros_idl`'s
+default (`native.module_name()`) assumes the enclosing *Bazel module* name
+is the ROS package name, which holds for RCR's own modules (one bzlmod
+module per ROS package) but not here, since our whole multi-package repo
+is a single bzlmod module named "ocs2_ros2" -- leaving the default in
+place generated code in an `::ocs2_ros2::msg::...` namespace instead of
+the correct `::ocs2_ros2_msgs::msg::...`, caught only once the generated
+C++ actually failed to compile (`'::ocs2_ros2' has not been declared`).
+"""
+
+load("@rosidl_default_generators//:defs.bzl", "ros_idl")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(glob(["*.idl"]))
+
+ros_idl(
+    name = "MpcState",
+    src = "MpcState.idl",
+    package = "ocs2_ros2_msgs",
+)
+
+ros_idl(
+    name = "MpcInput",
+    src = "MpcInput.idl",
+    package = "ocs2_ros2_msgs",
+)
+
+ros_idl(
+    name = "ModeSchedule",
+    src = "ModeSchedule.idl",
+    package = "ocs2_ros2_msgs",
+)
+
+ros_idl(
+    name = "MpcObservation",
+    src = "MpcObservation.idl",
+    package = "ocs2_ros2_msgs",
+    deps = [
+        ":MpcInput",
+        ":MpcState",
+    ],
+)
+
+ros_idl(
+    name = "MpcPerformanceIndices",
+    src = "MpcPerformanceIndices.idl",
+    package = "ocs2_ros2_msgs",
+)
+
+ros_idl(
+    name = "MpcTargetTrajectories",
+    src = "MpcTargetTrajectories.idl",
+    package = "ocs2_ros2_msgs",
+    deps = [
+        ":MpcInput",
+        ":MpcState",
+    ],
+)
+
+ros_idl(
+    name = "ControllerData",
+    src = "ControllerData.idl",
+    package = "ocs2_ros2_msgs",
+)
+
+ros_idl(
+    name = "MpcFlattenedController",
+    src = "MpcFlattenedController.idl",
+    package = "ocs2_ros2_msgs",
+    deps = [
+        ":ControllerData",
+        ":ModeSchedule",
+        ":MpcInput",
+        ":MpcObservation",
+        ":MpcPerformanceIndices",
+        ":MpcState",
+        ":MpcTargetTrajectories",
+    ],
+)
+
+ros_idl(
+    name = "BezierSegment",
+    src = "BezierSegment.idl",
+    package = "ocs2_ros2_msgs",
+    deps = [
+        "@geometry_msgs//msg:Vector3",
+    ],
+)
+
+ros_idl(
+    name = "BezierTrajectory",
+    src = "BezierTrajectory.idl",
+    package = "ocs2_ros2_msgs",
+    deps = [
+        ":BezierSegment",
+    ],
+)
+
+ros_idl(
+    name = "ThreeDofPointTS",
+    src = "ThreeDofPointTS.idl",
+    package = "ocs2_ros2_msgs",
+    deps = [
+        "@geometry_msgs//msg:Vector3",
+    ],
+)
+
+ros_idl(
+    name = "ThreeDofPath",
+    src = "ThreeDofPath.idl",
+    package = "ocs2_ros2_msgs",
+    deps = [
+        ":ThreeDofPointTS",
+    ],
+)
+
+ros_idl(
+    name = "IndividualGains",
+    src = "IndividualGains.idl",
+    package = "ocs2_ros2_msgs",
+)
+
+ros_idl(
+    name = "Gains",
+    src = "Gains.idl",
+    package = "ocs2_ros2_msgs",
+    deps = [
+        ":IndividualGains",
+    ],
+)
+
+ros_idl(
+    name = "IndividualBenchmarks",
+    src = "IndividualBenchmarks.idl",
+    package = "ocs2_ros2_msgs",
+)
+
+ros_idl(
+    name = "Benchmarks",
+    src = "Benchmarks.idl",
+    package = "ocs2_ros2_msgs",
+    deps = [
+        ":IndividualBenchmarks",
+    ],
+)
+
+ros_idl(
+    name = "Constraint",
+    src = "Constraint.idl",
+    package = "ocs2_ros2_msgs",
+)
+
+ros_idl(
+    name = "LagrangianMetrics",
+    src = "LagrangianMetrics.idl",
+    package = "ocs2_ros2_msgs",
+)
+
+ros_idl(
+    name = "Multiplier",
+    src = "Multiplier.idl",
+    package = "ocs2_ros2_msgs",
+)
