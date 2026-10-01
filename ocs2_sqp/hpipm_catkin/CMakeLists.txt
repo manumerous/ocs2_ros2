@@ -35,6 +35,12 @@ set(BLASFEO_PATH ${BLASFEO_PATH} CACHE STRING "BLASFEO installation path" FORCE)
 set(BLASFEO_INCLUDE_DIR ${BLASFEO_PATH}/include CACHE STRING "Path to BLASFEO header files." FORCE)
 set(BUILD_SHARED_LIBS ON CACHE STRING "Build shared libraries" FORCE)
 set(HPIPM_TESTING OFF CACHE BOOL "Examples enabled")
+# HPIPM defaults to AVX, which passes -m64 -mavx and breaks non-x86 builds (e.g. aarch64)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+  set(TARGET AVX CACHE STRING "Set CPU architecture target" FORCE)
+else()
+  set(TARGET GENERIC CACHE STRING "Set CPU architecture target" FORCE)
+endif()
 
 # Download & build source
 FetchContent_Declare(hpipmDownload
