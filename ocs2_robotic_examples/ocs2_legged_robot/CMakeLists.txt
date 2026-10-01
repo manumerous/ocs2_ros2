@@ -102,7 +102,7 @@ add_dependencies(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
         Eigen3::Eigen
         ${Boost_LIBRARIES}
-        ${pinocchio_LIBRARIES}
+        pinocchio::pinocchio
         dl
         )
 ament_target_dependencies(
