@@ -78,7 +78,7 @@ add_dependencies(${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
-  ${pinocchio_LIBRARIES}
+  pinocchio::pinocchio
 )
 target_compile_options(${PROJECT_NAME} PUBLIC ${FLAGS})
 

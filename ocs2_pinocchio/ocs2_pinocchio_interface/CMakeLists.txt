@@ -77,7 +77,7 @@ ament_target_dependencies(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-  ${pinocchio_LIBRARIES}
+  pinocchio::pinocchio
 )
 
 target_compile_options(${PROJECT_NAME} PUBLIC ${OCS2_PINOCCHIO_FLAGS})

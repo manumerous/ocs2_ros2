@@ -63,7 +63,7 @@ ament_target_dependencies(${PROJECT_NAME}
   ${AMENT_DEPENDENCIES}
 )
 target_link_libraries(${PROJECT_NAME}
-  ${pinocchio_LIBRARIES}
+  pinocchio::pinocchio
 )
 target_compile_options(${PROJECT_NAME} PUBLIC ${FLAGS})
 
